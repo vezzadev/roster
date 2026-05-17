@@ -1,0 +1,11 @@
+#!/bin/sh
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+protected_branches="main A B C D E F G"
+for b in $protected_branches; do
+  if [ "$branch" = "$b" ]; then
+    echo "ERROR: Direct commits to '$branch' are not allowed. Use a feature branch."
+    exit 1
+  fi
+done

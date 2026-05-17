@@ -1,0 +1,26 @@
+#!/bin/sh
+
+branch=$(git rev-parse --abbrev-ref HEAD)
+remote="$1"
+
+# Block pushing worktree branches.
+worktree_branches="A B C D E F G"
+for b in $worktree_branches; do
+  if [ "$branch" = "$b" ]; then
+    echo "ERROR: Do not push worktree branch '$branch'."
+    exit 1
+  fi
+done
+
+# Only check rebase status for origin pushes.
+if [ "$remote" != "origin" ]; then
+  exit 0
+fi
+
+# Check if branch is rebased on origin/main.
+git fetch origin main --quiet 2>/dev/null
+if git merge-tree $(git merge-base HEAD origin/main) HEAD origin/main | grep -q "^<<<<<<<"; then
+  echo "ERROR: Branch has conflicts with origin/main. Rebase first:"
+  echo "  git pull --rebase origin main"
+  exit 1
+fi

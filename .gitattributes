@@ -1,0 +1,17 @@
+# Auto-detect text files and normalize line endings to LF in the repo
+* text=auto
+
+# Force LF for common file types
+*.go text eol=lf
+*.mod text eol=lf
+*.sum text eol=lf
+*.ts text eol=lf
+*.json text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+*.html text eol=lf
+
+# gh-aw compiled workflows
+.github/workflows/*.lock.yml linguist-generated=true merge=ours
