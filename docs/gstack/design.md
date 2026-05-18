@@ -48,6 +48,14 @@ deep multi-agent expertise, portfolio piece, open-source community signal.
 - Closest competitors target different use cases (enterprise augmentation, coding-only)
 - No tool exists for "spin up an entire AI project team with real identities and comms"
 
+### Positioning: contract, not infrastructure
+
+Roster doesn't compete on infrastructure choice -- it competes on the abstraction. The
+provisioning contract is two requirements: MCP servers for AI roles + credential rotation
+for human takeover. Any backend that satisfies this contract works. v1 uses Nextcloud
+because it's a concrete proof of concept, but a lighter provider (shared directory + Slack
+channel + Mailgun) would work with the same roster.yaml.
+
 ### Gas Town (positioning context)
 
 Gas Town (Steve Yegge, 13k GitHub stars, v1.0 Apr 2026) is the closest conceptual
@@ -69,23 +77,14 @@ neighbor. It validated the multi-agent orchestration space but occupies a differ
 work), practical execution. Not a token-burning code factory... a real project team with
 identities, inboxes, and human-friendly takeover. $200/mo, not $3k/week.
 
+Gas Town is opinionated about the infrastructure (git hooks, beads, config directories).
+Roster is opinionated about the contract and agnostic about the infrastructure.
+
 **Key differentiators for hardcore AI users (first target market):**
 1. Agents have real identities (email, chat accounts) not anonymous workers
 2. Human takeover is first-class, not an afterthought
 3. Non-coding roles (PM, designer, marketer) are first-class citizens
 4. Predictable teams, not long-running factories
-
-### Positioning: contract, not infrastructure
-
-Roster doesn't compete on infrastructure choice -- it competes on the abstraction. The
-provisioning contract is two requirements: MCP servers for AI roles + credential rotation
-for human takeover. Any backend that satisfies this contract works. v1 uses Nextcloud
-because it's a concrete proof of concept, but a lighter provider (shared directory + Slack
-channel + Mailgun) would work with the same roster.yaml.
-
-This sharpens the Gas Town comparison: Gas Town is opinionated about the infrastructure
-(git hooks, beads, config directories). Roster is opinionated about the contract and
-agnostic about the infrastructure.
 
 ### gstack (composability with agent skill systems)
 
