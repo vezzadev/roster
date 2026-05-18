@@ -87,7 +87,7 @@ This sharpens the Gas Town comparison: Gas Town is opinionated about the infrast
 (git hooks, beads, config directories). Roster is opinionated about the contract and
 agnostic about the infrastructure.
 
-### Composability with agent skill systems
+### gstack (composability with agent skill systems)
 
 Agent skills (e.g., gstack's /qa, /ship, /review) integrate naturally via the role spec
 once YAML provisioning ships:
