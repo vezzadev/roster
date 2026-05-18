@@ -6,6 +6,12 @@ Repo: vezzadev/roster
 Status: APPROVED
 Mode: Startup
 
+## Elevator Pitch
+
+Docker-compose for AI teams. One YAML file defines roles, skills, and tools. `roster up`
+provisions a full project team -- chat, email, files, memory. `roster down` tears it all
+down. Humans can take over any role via GUI at any time. Open protocol, open source.
+
 ## Problem Statement
 
 Building AI-staffed project teams today requires weeks of integration work: provisioning
@@ -41,6 +47,61 @@ deep multi-agent expertise, portfolio piece, open-source community signal.
 - Most people: not doing this at all because multi-agent collaboration is too niche
 - Closest competitors target different use cases (enterprise augmentation, coding-only)
 - No tool exists for "spin up an entire AI project team with real identities and comms"
+
+### Positioning: contract, not infrastructure
+
+Roster doesn't compete on infrastructure choice -- it competes on the abstraction. The
+provisioning contract is two requirements: MCP servers for AI roles + credential rotation
+for human takeover. Any backend that satisfies this contract works. v1 uses Nextcloud
+because it's a concrete proof of concept, but a lighter provider (shared directory + Slack
+channel + Mailgun) would work with the same roster.yaml.
+
+### Gas Town (positioning context)
+
+Gas Town (Steve Yegge, 13k GitHub stars, v1.0 Apr 2026) is the closest conceptual
+neighbor. It validated the multi-agent orchestration space but occupies a different niche:
+
+| | Gas Town | Roster |
+|---|---|---|
+| Domain | Coding agents only | Any project team role |
+| Agent count | 20-30 parallel (factory) | 3-5 focused (team) |
+| Cost profile | ~$100/hr token burn | ~$100-200/mo total |
+| Communication | Internal git hooks, beads | Real email, chat, files (external-facing) |
+| Identity model | Disposable workers (polecats) | Persistent role identities with memory |
+| Human involvement | Mayor supervises | Human can become any role (takeover via GUI) |
+| Output | Code (PRs, commits) | Business outcomes (research, strategy, outreach) |
+| Provisioning | Config directories | Full infrastructure (Nextcloud, email, storage) |
+| Reputation | Polarized (visionary vs tokenmaxxing theater) | — |
+
+**Roster's positioning: "the sane alternative."** Same insight (AI teams are the unit of
+work), practical execution. Not a token-burning code factory... a real project team with
+identities, inboxes, and human-friendly takeover. $200/mo, not $3k/week.
+
+Gas Town is opinionated about the infrastructure (git hooks, beads, config directories).
+Roster is opinionated about the contract and agnostic about the infrastructure.
+
+**Key differentiators for hardcore AI users (first target market):**
+1. Agents have real identities (email, chat accounts) not anonymous workers
+2. Human takeover is first-class, not an afterthought
+3. Non-coding roles (PM, designer, marketer) are first-class citizens
+4. Predictable teams, not long-running factories
+
+### gstack (composability with agent skill systems)
+
+Agent skills (e.g., gstack's /qa, /ship, /review) integrate naturally via the role spec
+once YAML provisioning ships:
+
+```yaml
+roles:
+  - id: engineer
+    type: ai
+    agent: {provider: claude, model: opus}
+    skills: [gstack-qa, gstack-ship, gstack-review]
+```
+
+**Roster's positioning:** no special integration needed. Skills are just another field in
+the role definition, resolved by the agent runtime (Letta) at provisioning time. Roster
+provisions the team and workspace; skill systems provide the agent's internal capabilities.
 
 ## Target User & Narrowest Wedge
 
