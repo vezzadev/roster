@@ -99,9 +99,9 @@ roles:
     skills: [gstack-qa, gstack-ship, gstack-review]
 ```
 
-No special integration needed. Skills are just another field in the role definition,
-resolved by the agent runtime (Letta) at provisioning time. Roster provisions the team
-and workspace; skill systems provide the agent's internal capabilities.
+**Roster's positioning:** no special integration needed. Skills are just another field in
+the role definition, resolved by the agent runtime (Letta) at provisioning time. Roster
+provisions the team and workspace; skill systems provide the agent's internal capabilities.
 
 ## Target User & Narrowest Wedge
 
