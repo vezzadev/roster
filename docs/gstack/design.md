@@ -48,6 +48,33 @@ deep multi-agent expertise, portfolio piece, open-source community signal.
 - Closest competitors target different use cases (enterprise augmentation, coding-only)
 - No tool exists for "spin up an entire AI project team with real identities and comms"
 
+### Gas Town (positioning context)
+
+Gas Town (Steve Yegge, 13k GitHub stars, v1.0 Apr 2026) is the closest conceptual
+neighbor. It validated the multi-agent orchestration space but occupies a different niche:
+
+| | Gas Town | Roster |
+|---|---|---|
+| Domain | Coding agents only | Any project team role |
+| Agent count | 20-30 parallel (factory) | 3-5 focused (team) |
+| Cost profile | ~$100/hr token burn | ~$100-200/mo total |
+| Communication | Internal git hooks, beads | Real email, chat, files (external-facing) |
+| Identity model | Disposable workers (polecats) | Persistent role identities with memory |
+| Human involvement | Mayor supervises | Human can become any role (takeover via GUI) |
+| Output | Code (PRs, commits) | Business outcomes (research, strategy, outreach) |
+| Provisioning | Config directories | Full infrastructure (Nextcloud, email, storage) |
+| Reputation | Polarized (visionary vs tokenmaxxing theater) | — |
+
+**Roster's positioning: "the sane alternative."** Same insight (AI teams are the unit of
+work), practical execution. Not a token-burning code factory... a real project team with
+identities, inboxes, and human-friendly takeover. $200/mo, not $3k/week.
+
+**Key differentiators for hardcore AI users (first target market):**
+1. Agents have real identities (email, chat accounts) not anonymous workers
+2. Human takeover is first-class, not an afterthought
+3. Non-coding roles (PM, designer, marketer) are first-class citizens
+4. Predictable teams, not long-running factories
+
 ## Target User & Narrowest Wedge
 
 **Primary:** Technical founder / AI power user who wants to spin up AI project teams for
