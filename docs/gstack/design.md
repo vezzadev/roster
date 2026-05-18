@@ -75,6 +75,35 @@ identities, inboxes, and human-friendly takeover. $200/mo, not $3k/week.
 3. Non-coding roles (PM, designer, marketer) are first-class citizens
 4. Predictable teams, not long-running factories
 
+### Positioning: contract, not infrastructure
+
+Roster doesn't compete on infrastructure choice -- it competes on the abstraction. The
+provisioning contract is two requirements: MCP servers for AI roles + credential rotation
+for human takeover. Any backend that satisfies this contract works. v1 uses Nextcloud
+because it's a concrete proof of concept, but a lighter provider (shared directory + Slack
+channel + Mailgun) would work with the same roster.yaml.
+
+This sharpens the Gas Town comparison: Gas Town is opinionated about the infrastructure
+(git hooks, beads, config directories). Roster is opinionated about the contract and
+agnostic about the infrastructure.
+
+### Composability with agent skill systems
+
+Agent skills (e.g., gstack's /qa, /ship, /review) integrate naturally via the role spec
+once YAML provisioning ships:
+
+```yaml
+roles:
+  - id: engineer
+    type: ai
+    agent: {provider: claude, model: opus}
+    skills: [gstack-qa, gstack-ship, gstack-review]
+```
+
+No special integration needed. Skills are just another field in the role definition,
+resolved by the agent runtime (Letta) at provisioning time. Roster provisions the team
+and workspace; skill systems provide the agent's internal capabilities.
+
 ## Target User & Narrowest Wedge
 
 **Primary:** Technical founder / AI power user who wants to spin up AI project teams for
