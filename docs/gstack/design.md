@@ -6,6 +6,12 @@ Repo: vezzadev/roster
 Status: APPROVED
 Mode: Startup
 
+## Elevator Pitch
+
+Docker-compose for AI teams. One YAML file defines roles, skills, and tools. `roster up`
+provisions a full project team -- chat, email, files, memory. `roster down` tears it all
+down. Humans can take over any role via GUI at any time. Open protocol, open source.
+
 ## Problem Statement
 
 Building AI-staffed project teams today requires weeks of integration work: provisioning
