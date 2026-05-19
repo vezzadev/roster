@@ -5,8 +5,8 @@ Informs (a) which agent skills/MCPs to plug into each role, (b) the long-term
 memory progression an agent should accumulate to "level up" from junior
 analyst to knowledge expert, and (c) validation/benchmarking targets.
 
-**Source.** Pedro × Claude side-chat, 2026-05-19, four Q&As. Original transcript:
-https://claude.ai/share/4406d240-2cc9-4465-a135-bdbc3572c5e7
+**Source.** Pedro × Claude side-chat, 2026-05-19, four Q&As. Vendored
+transcript: [`research-desk-source-transcript.md`](research-desk-source-transcript.md).
 
 Reorganized below by use case for Roster, not preserved verbatim. Quote
 attribution is to Claude's responses in that chat.
@@ -116,7 +116,7 @@ Claude-only; multi-model is a v2 question.*
 
 Pattern most large firms use: Claude (or in-house) agent + MCP to:
 
-- **Firecrawl / Browserbase** — web scraping, browser automation *(already in your stack)*
+- **Firecrawl / Browserbase** — web scraping, browser automation
 - **PitchBook, Capital IQ, FactSet** — increasingly exposing MCP/agent APIs; otherwise screen-scrape via Browserbase with logged-in session
 - **SharePoint / Confluence / Notion** — surfacing past deliverables + benchmarks (internal KM)
 - **GLG, AlphaSights, Third Bridge** — enterprise API access for expert networks; some now expose programmatic transcript search

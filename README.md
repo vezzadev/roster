@@ -65,7 +65,7 @@ up new AI-native ones.
 ## Architecture
 
 ```
-roster.yaml (canned template)
+canned template (research-desk)
          │
          ▼
     Roster CLI  ── roster up / down / takeover / return / status
@@ -164,7 +164,7 @@ operator in calendar time.
 - TDD: no production code without a failing test first.
 - All four test layers: unit, integration (testcontainers-go),
   end-to-end against real Docker Compose, plus 10 consecutive E2E runs
-  on every commit to `main`.
+  on every commit to `main` (planned — not yet wired in CI).
 - Subagent-driven implementation per feature: tester, implementer,
   reviewer, demo-presenter, demo-reviewer.
 - Demo evidence on every PR (terminal recording plus screenshots).
