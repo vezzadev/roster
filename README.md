@@ -1,8 +1,9 @@
 # Roster
 
-**Docker-compose for human+AI teams.** One config defines roles, skills,
-and tools. `roster up` brings up the team with chat, email, files, and
-memory. Take over any role any time. `roster down` tears it all down.
+**Docker-compose for human+AI teams.** One config defines roles, tools,
+and who's AI vs human. `roster up` brings up the team with chat, email,
+files, and memory — AI works through the same accounts a human would.
+Swap any seat to human any time. `roster down` tears it all down.
 
 > **Status: pre-v1, in active development.** The CLI shown below is the
 > target design for v1, not what's in `main` yet. Progress in
