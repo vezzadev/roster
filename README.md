@@ -1,8 +1,8 @@
 # Roster
 
-**Docker-compose for AI teams.** One config defines roles, skills, and tools.
-`roster up` provisions a full project team — chat, email, files, memory.
-`roster down` tears it all down. Humans can take over any role at any time.
+**Docker-compose for human+AI teams.** One config defines roles, skills, and
+tools. `roster up` provisions a full project team — chat, email, files,
+memory. Take over any role, any time. `roster down` tears it all down.
 
 > **Status: pre-v1, in active development.** The CLI you see in this README is
 > the target design, not yet what's in `main`. Track progress in
@@ -17,20 +17,27 @@ nobody has defined how they compose into a coherent team. Only deeply technical
 people get past the plumbing — and even they burn weeks before any agent
 produces useful work.
 
+Almost every multi-agent product today is a coding tool. Roster isn't.
+The v1 demo team is a **research desk** — Engagement Manager, two Senior
+Analysts, a Researcher — producing the kind of brief a boutique consultancy
+charges five figures for. Low-stakes outputs (drafts, memos, reviewable
+before they leave the building), broad audience (anyone who has ever
+commissioned a market analysis), uncrowded category.
+
 Roster's bet: disposable, blended human/AI project teams become normal within
 18 months, and the integration layer is where the value lives.
 
 ## What you get
 
-- **One command to provision.** `roster up` spins up a 4-role app-dev team
-  (PM, Designer, Engineer, Marketing) in under 10 minutes.
+- **One command to provision.** `roster up` spins up a 4-role research desk
+  (Engagement Manager, two Senior Analysts, Researcher) in under 10 minutes.
 - **Real identities, real infrastructure.** Each agent gets a Nextcloud
   account, email mailbox (Migadu), and shared workspace — not anonymous
   workers.
-- **First-class human takeover.** `roster takeover pm` stops the agent,
+- **First-class human takeover.** `roster takeover em` stops the agent,
   rotates credentials, and hands you a login URL within 30 seconds. The AI
   is provably blocked.
-- **Resume with context.** `roster return pm` restarts the agent with a
+- **Resume with context.** `roster return em` restarts the agent with a
   catch-up directive — the agent uses its existing tools to read what
   happened while you were driving.
 
@@ -39,8 +46,8 @@ Roster's bet: disposable, blended human/AI project teams become normal within
 | | [Gas Town](https://github.com/sourcegraph/gas-town) | [gstack](https://github.com/pedropaulovc/personal-marketplace) | Roster |
 |---|---|---|---|
 | Layer | Agent factory | Per-agent skill packs | Team provisioning |
-| Domain | Coding only | Any (skills like /qa, /ship, /review) | Any project role |
-| Agent count | 20–30 parallel | Augments one agent | 3–5 focused |
+| Domain | Coding only | Any (skills like /qa, /ship, /review) | Knowledge work (research, strategy, content) |
+| Default team | 20–30 coding workers | Augments one agent | 4-role research desk |
 | Communication | Internal git hooks | n/a (single agent) | Real email, chat, files |
 | Identity | Disposable workers | Inherits from host | Persistent roles with memory |
 | Human override | Mayor supervises | n/a | Become any role via GUI |
@@ -70,14 +77,14 @@ roster.yaml (canned template)
     ▼    ▼    ▼       ▼             ▼
  Nextcloud  Migadu  Letta Server   Agent instances
  (workspace) (email) (runtime)     (one per role)
-  · Talk     · SMTP   · Memory      · PM
-  · Files    · IMAP   · Lifecycle   · Engineer
-  · Mail UI  · $19/mo               · Designer
-                                    · Marketing
+  · Talk     · SMTP   · Memory      · Engagement Manager
+  · Files    · IMAP   · Lifecycle   · Senior Analyst (×2)
+  · Mail UI                         · Researcher
 ```
 
 - **Agents ↔ Nextcloud:** MCP tools (Talk + Files in v1).
-- **Agents ↔ Email:** IMAP/SMTP via Migadu app passwords.
+- **Agents ↔ Email:** IMAP/SMTP via Migadu app passwords (internal handoffs
+  in v1 — no external client emails).
 - **Agents ↔ Agents:** Nextcloud Talk rooms (one `#team` + per-pair DMs),
   visible to humans during takeover.
 - **Takeover:** stop the Letta agent first, then rotate Nextcloud + Migadu
@@ -95,7 +102,7 @@ TLS, and cloud deployment land in v2.
 
 ```bash
 # Pick a canned template and initialize the project
-roster init --template app-dev-team --project my-experiment
+roster init --template research-desk --project market-entry-brief
 
 # Bring the team up (Docker Compose + Nextcloud + Letta + agents)
 roster up
@@ -103,11 +110,11 @@ roster up
 # See who's running and what they're doing
 roster status
 
-# Take over the PM role — get a login URL, agent is stopped
-roster takeover pm
+# Take over the Engagement Manager role — get a login URL, agent is stopped
+roster takeover em
 
 # Return the role to AI when you're done
-roster return pm
+roster return em
 
 # Tear everything down
 roster down
