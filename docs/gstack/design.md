@@ -511,8 +511,9 @@ methodology skills:
 - **Human approval mandatory on every PR.** No PR auto-merges without a human reviewer
   approving in addition to CI gates.
 
-These standards supersede AGENTS.md's prior "70% coverage" baseline. AGENTS.md has been
-updated to point to this section.
+These standards layer on top of AGENTS.md's 70% coverage baseline (enforced by
+`.github/workflows/ci-cd-pr.yml`) — coverage remains the floor; TDD + the 4 test
+layers + subagent-driven dev are the additional rigor for Roster v1.
 
 **Timeline impact:** the original 6-week solo estimate is more realistically
 **10-12 weeks aspirational / 16-20 weeks realistic** at this rigor level (revised per
