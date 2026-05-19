@@ -1,46 +1,44 @@
 # Roster
 
-**Docker-compose for human+AI teams.** One config defines roles, skills, and
-tools. `roster up` provisions a full project team — chat, email, files,
-memory. Take over any role, any time. `roster down` tears it all down.
+**Docker-compose for human+AI teams.** One config defines roles, skills,
+and tools. `roster up` brings up the team with chat, email, files, and
+memory. Take over any role any time. `roster down` tears it all down.
 
-> **Status: pre-v1, in active development.** The CLI you see in this README is
-> the target design, not yet what's in `main`. Track progress in
+> **Status: pre-v1, in active development.** The CLI shown below is the
+> target design for v1, not what's in `main` yet. Progress in
 > [`docs/gstack/design.md`](docs/gstack/design.md).
 
 ## Why
 
-Spinning up a multi-agent project team today means weeks of integration work:
-provisioning chat channels, creating email identities, wiring up agent memory,
-configuring tools, managing credentials. Each piece works in isolation, but
-nobody has defined how they compose into a coherent team. Only deeply technical
-people get past the plumbing — and even they burn weeks before any agent
-produces useful work.
+Standing up a multi-agent team today is weeks of plumbing. Chat channels.
+Email identities. Agent memory. Tool configuration. Credentials. Every
+piece works in isolation. Nobody has wired them together into something
+that behaves like a team, which is why only deep technical people get
+past setup, and why even they spend weeks before an agent produces useful
+work.
 
-Almost every multi-agent product today is a coding tool. Roster isn't.
-The v1 demo team is a **research desk** — Engagement Manager, two Senior
-Analysts, a Researcher — producing the kind of brief a boutique consultancy
-charges five figures for. Low-stakes outputs (drafts, memos, reviewable
-before they leave the building), broad audience (anyone who has ever
-commissioned a market analysis), uncrowded category.
+Almost every multi-agent product I've seen is a coding tool. Roster
+isn't. The v1 demo team is a research desk: an Engagement Manager, two
+Senior Analysts, and a Researcher. Their job is to produce the kind of
+brief a boutique consultancy bills five figures for. Everything they
+output is a draft. Nothing ships without a human reading it first.
 
-Roster's bet: blended human/AI project teams — spun up for one project, torn
-down after — become normal within 18 months, and what holds them together
-is humans able to take any seat, any time.
+The bet behind this: project teams of mixed humans and AI agents become
+a normal way to work in the next 18 months. They get spun up for a
+project, torn down after, and the thing that keeps them coherent is a
+human always being one command away from driving any seat.
 
 ## What you get
 
-- **One command to provision.** `roster up` spins up a 4-role research desk
-  (Engagement Manager, two Senior Analysts, Researcher) in under 10 minutes.
-- **Real identities, real infrastructure.** Each agent gets a Nextcloud
-  account, email mailbox (Migadu), and shared workspace — not anonymous
-  workers.
-- **First-class human takeover.** `roster takeover em` stops the agent,
-  rotates credentials, and hands you a login URL within 30 seconds. The AI
-  is provably blocked.
-- **Resume with context.** `roster return em` restarts the agent with a
-  catch-up directive — the agent uses its existing tools to read what
-  happened while you were driving.
+`roster up` provisions a 4-role research desk in under 10 minutes. Each
+agent gets a real Nextcloud account, a real Migadu mailbox, and a real
+shared workspace. They are not anonymous workers.
+
+`roster takeover em` stops the Engagement Manager, rotates its
+credentials, and hands you a login URL inside 30 seconds. While you're
+driving, the AI is provably blocked. When you hand back with `roster
+return em`, the agent restarts with a short directive telling it to use
+its existing tools to read up on what happened in its absence.
 
 ## How it compares
 
@@ -53,16 +51,16 @@ is humans able to take any seat, any time.
 | Identity | Disposable workers | Inherits from host | Persistent roles with memory |
 | Human override | Mayor supervises | n/a | Become any role via GUI |
 
-gstack is complementary, not competitive: skills slot into a Roster role's
-`skills:` field and are resolved by the agent runtime at provisioning.
-Roster provisions the team and workspace; skill systems provide the
-agent's internal capabilities.
+gstack isn't a competitor, it's a complement. gstack skills slot into a
+Roster role's `skills:` field, and the agent runtime resolves them at
+provisioning time. Roster gives a team its workspace. gstack gives an
+agent its capabilities.
 
-Closest enterprise neighbor is [Archestra](https://archestra.ai/) — but
-Archestra wraps an existing organization, while Roster provisions a new
-workspace from blank state. Microsoft Agent 365 observes; it doesn't
-provision. Dust.tt / Ruh AI augment existing companies; Roster spins up new
-AI-native teams.
+The closest enterprise neighbor is [Archestra](https://archestra.ai/),
+but Archestra wraps an existing organization, while Roster provisions a
+new workspace from blank state. Microsoft Agent 365 observes; it doesn't
+provision. Dust.tt and Ruh AI augment existing companies. Roster spins
+up new AI-native ones.
 
 ## Architecture
 
@@ -83,19 +81,22 @@ roster.yaml (canned template)
   · Mail UI                         · Researcher
 ```
 
-- **Agents ↔ Nextcloud:** MCP tools (Talk + Files in v1).
-- **Agents ↔ Email:** IMAP/SMTP via Migadu app passwords (internal handoffs
-  in v1 — no external client emails).
-- **Agents ↔ Agents:** Nextcloud Talk rooms (one `#team` + per-pair DMs),
-  visible to humans during takeover.
-- **Takeover:** stop the Letta agent first, then rotate Nextcloud + Migadu
-  credentials. Hard runtime kill switch; credential rotation is
-  defense-in-depth.
+Agents talk to Nextcloud through MCP (Talk and Files in v1). They use
+Migadu for IMAP and SMTP, but in v1 that's strictly internal handoffs;
+no client-facing mail yet. Agent-to-agent traffic flows through Nextcloud
+Talk rooms (one `#team` plus per-pair DMs), so when a human takes over a
+role they can read the whole conversation history natively, without any
+custom UI.
 
-v1 runs on a single host. Nextcloud binds to `0.0.0.0:8080` so collaborators
-on your LAN can join — restrict via firewall or
-`--nextcloud-bind 127.0.0.1` if you're not on a trusted network. Real DNS,
-TLS, and cloud deployment land in v2.
+Takeover stops the Letta agent first, then rotates credentials in
+Nextcloud and Migadu. The runtime stop is the hard guarantee. The
+credential rotation is defense in depth in case the agent already cached
+something it shouldn't have.
+
+v1 runs on a single host. Nextcloud binds to `0.0.0.0:8080` so
+collaborators on your LAN can join the workspace. If you're not on a
+trusted network, restrict it via firewall or pass `--nextcloud-bind
+127.0.0.1`. Real DNS, TLS, and cloud deployment all land in v2.
 
 ## Quick start
 
@@ -111,7 +112,7 @@ roster up
 # See who's running and what they're doing
 roster status
 
-# Take over the Engagement Manager role — get a login URL, agent is stopped
+# Take over the Engagement Manager role: login URL printed, agent stopped
 roster takeover em
 
 # Return the role to AI when you're done
@@ -123,24 +124,26 @@ roster down
 
 ## Security posture
 
-v1 is honest about what it does and doesn't defend against:
+v1 tries to be honest about what it does and doesn't defend against.
 
-- **Threat model:** a confused or looping agent that a human needs to seize
-  control from. Takeover is a *best-effort, time-bounded containment*, not
-  a defense against an adversarial agent that already exfiltrated
-  credentials.
-- **Prompt injection in Talk/Files content** is a known v1 weakness. Light
-  system-prompt hardening only. Real defense (MCP proxy sidecar, outbound
-  network policy) is a v1.x research item.
-- **Agent admin separation:** agents never hold Nextcloud admin
-  credentials. A compromised agent cannot bypass takeover by creating new
-  accounts.
+The threat model is a confused or looping agent that a human needs to
+seize control from. Takeover is best-effort, time-bounded containment.
+It does nothing to claw back data an adversarial agent already exfiltrated
+before being stopped, and we are upfront about that.
+
+Prompt injection inside Talk messages and Files content is a known v1
+weakness. The defense in v1 is light system-prompt hardening, and that's
+it. Real defense (an MCP proxy sidecar that holds credentials away from
+the agent runtime, outbound network policy) is on the v1.x research list.
+
+Agents never hold Nextcloud admin credentials. A compromised agent can't
+bypass takeover by creating itself a new account.
 
 ## Development
 
-Roster is a Go CLI. The current scaffold inherits from a Go template; the
-`go-project` / `myapp` names are scheduled to be renamed to `roster` in
-Week 2 of the v1 plan.
+Roster is a Go CLI. The scaffold still carries the `go-project` and
+`myapp` names from the template repo it was bootstrapped from; those get
+renamed to `roster` in Week 2 of the v1 plan.
 
 ```bash
 make tools          # Install dev tools (air, golangci-lint, goimports)
@@ -153,31 +156,33 @@ See [AGENTS.md](AGENTS.md) for the full command list and code conventions.
 
 ### Development standards
 
-v1 is built under deliberately maximalist standards (chosen as a rigor
-experiment alongside the product work):
+v1 is being built under deliberately maximalist standards. Partly because
+the product needs them. Partly as a rigor experiment to see what
+maximalist standards on a research+platform+process combo costs a solo
+operator in calendar time.
 
-- **TDD Iron Law:** no production code without a failing test first.
-- **Test layers:** unit, integration (testcontainers-go), end-to-end (full
-  `up → takeover → return → down` against real Docker Compose), plus 10
-  consecutive E2E stress runs on every commit to `main`.
-- **Subagent-driven implementation** per feature (tester, implementer,
-  code-reviewer, demo-presenter, demo-reviewer).
-- **Demo evidence on every PR** (terminal recording + screenshots).
-- **Human approval mandatory** on every PR before auto-merge.
+- TDD: no production code without a failing test first.
+- All four test layers: unit, integration (testcontainers-go),
+  end-to-end against real Docker Compose, plus 10 consecutive E2E runs
+  on every commit to `main`.
+- Subagent-driven implementation per feature: tester, implementer,
+  reviewer, demo-presenter, demo-reviewer.
+- Demo evidence on every PR (terminal recording plus screenshots).
+- Human approval required on every PR. No CI-only auto-merge.
 
 ## Dependencies
 
-- [Letta](https://letta.com/) — agent runtime (memory + lifecycle).
-- [Nextcloud](https://nextcloud.com/) — workspace (Talk, Files, Mail UI).
-- [Migadu](https://www.migadu.com/) — email (flat-rate hosting, Admin API).
-- [Claude API](https://www.anthropic.com/) — agent LLM calls.
-- Docker + Docker Compose.
+- [Letta](https://letta.com/) — agent runtime (memory + lifecycle)
+- [Nextcloud](https://nextcloud.com/) — workspace (Talk, Files, Mail UI)
+- [Migadu](https://www.migadu.com/) — email (flat-rate hosting, Admin API)
+- [Claude API](https://www.anthropic.com/) — agent LLM calls
+- Docker + Docker Compose
 
 ## Distribution
 
-- CLI binary via [GoReleaser](https://goreleaser.com/) (linux/darwin/windows,
-  amd64/arm64) — `go install` or download from GitHub Releases.
-- Container images on GHCR.
+CLI binary via [GoReleaser](https://goreleaser.com/) for
+linux/darwin/windows on amd64 and arm64. Install with `go install` or
+download from GitHub Releases. Container images on GHCR.
 
 ```bash
 git tag v0.1.0
@@ -187,6 +192,6 @@ git push origin v0.1.0
 ## Further reading
 
 - [`docs/gstack/design.md`](docs/gstack/design.md) — full design doc:
-  premises, architecture, failure modes, cost model, open questions.
+  premises, architecture, failure modes, open questions.
 - [AGENTS.md](AGENTS.md) — code conventions, build commands, project
   structure.
