@@ -24,8 +24,9 @@ charges five figures for. Low-stakes outputs (drafts, memos, reviewable
 before they leave the building), broad audience (anyone who has ever
 commissioned a market analysis), uncrowded category.
 
-Roster's bet: disposable, blended human/AI project teams become normal within
-18 months, and the integration layer is where the value lives.
+Roster's bet: blended human/AI project teams — spun up for one project, torn
+down after — become normal within 18 months, and what holds them together
+is humans able to take any seat, any time.
 
 ## What you get
 

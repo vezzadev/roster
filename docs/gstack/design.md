@@ -56,9 +56,10 @@ even they burn weeks on plumbing instead of building.
   agents-in-comms infrastructure. Gap exists at the "team orchestration" layer above.
 
 **Demand risk (acknowledged):** Long-term AI agent collaboration is niche today. This is
-a bet that disposable AI teams become normal within 18 months, and being 12 months ahead
-on the integration layer is the play. Acceptable downside for a sabbatical project:
-deep multi-agent expertise, portfolio piece, open-source community signal.
+a bet that AI teams provisioned per project (spun up, torn down) become normal within
+18 months, and being 12 months ahead on the integration layer is the play. Acceptable
+downside for a sabbatical project: deep multi-agent expertise, portfolio piece,
+open-source community signal.
 
 ## Status Quo
 
