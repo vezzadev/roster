@@ -37,9 +37,10 @@ shared workspace. They are not anonymous workers.
 
 `roster takeover em` stops the Engagement Manager, rotates its
 credentials, and hands you a login URL inside 30 seconds. While you're
-driving, the AI is provably blocked. When you hand back with `roster
-return em`, the agent restarts with a short directive telling it to use
-its existing tools to read up on what happened in its absence.
+driving, the AI is stopped at the runtime and locked out of its
+accounts. When you hand back with `roster return em`, the agent
+restarts with a short directive telling it to use its existing tools to
+read up on what happened in its absence.
 
 ## How it compares
 
@@ -56,12 +57,6 @@ gstack isn't a competitor, it's a complement. gstack skills slot into a
 Roster role's `skills:` field, and the agent runtime resolves them at
 provisioning time. Roster gives a team its workspace. gstack gives an
 agent its capabilities.
-
-The closest enterprise neighbor is [Archestra](https://archestra.ai/),
-but Archestra wraps an existing organization, while Roster provisions a
-new workspace from blank state. Microsoft Agent 365 observes; it doesn't
-provision. Dust.tt and Ruh AI augment existing companies. Roster spins
-up new AI-native ones.
 
 ## Architecture
 
