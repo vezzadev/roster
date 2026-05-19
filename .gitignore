@@ -27,5 +27,6 @@ tmp/
 logs/
 
 # Claude Code
-.claude/
+.claude/*
+!.claude/settings.json
 pat.local
