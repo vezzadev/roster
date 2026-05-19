@@ -33,6 +33,16 @@ even they burn weeks on plumbing instead of building.
   ~$100-200/mo total.
 - Closest competitors (Ruh AI, Dust.tt) target existing companies augmenting human teams,
   not people spinning up new AI-native project teams from scratch.
+- Archestra (Aug 2025, $3.3M pre-seed, MIT-licensed): open-source enterprise MCP gateway
+  and guardrails platform from repeat Grafana/Elastic founders. Plugs into existing
+  enterprise stacks (Slack, Teams, Jira, Confluence, SharePoint) to make agent
+  write-access safe against the "lethal trifecta." Different wedge from Roster:
+  Archestra wraps an existing organization; Roster provisions a new project workspace
+  from blank state. Overlap is vocabulary (agents, MCP, Docker, credentials, Slack) and
+  credential-rotation patterns, not target user or job-to-be-done. Possible v1.5
+  integration target (optional MCP gateway inside the Docker Compose) rather than
+  pure competitor. Full comparison: pedro-main-research-archestra-20260518-171126.md
+  in ~/.gstack/projects/vezzadev-roster/.
 - Anthropic acquihired Zulip leadership (May 2026) signaling intent to build
   agents-in-comms infrastructure. Gap exists at the "team orchestration" layer above.
 
