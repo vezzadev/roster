@@ -50,10 +50,16 @@ api/v1alpha1/       # CRD types (when doing K8s)
 
 ### Testing
 
+For Roster v1, the authoritative testing standards live in
+`docs/gstack/design.md` → "Development Standards" (TDD Iron Law, unit + integration +
+E2E + stress, subagent-driven implementation per feature). The bullets below are the
+inherited Go-template baseline; the design-doc Development Standards SUPERSEDE them
+where they conflict:
+
 - `go test -race ./...` must pass with zero failures
-- Coverage threshold: 70%
-- New features require unit tests
-- No flaky tests — fix immediately
+- Coverage threshold: 70% (Roster v1 raises this — see design.md Development Standards)
+- New features require unit tests (Roster v1 requires unit + integration + E2E + stress)
+- No flaky tests — fix immediately (Roster v1 enforces via 50-consecutive-E2E gate)
 - Prefer table-driven tests with subtests
 
 ### Git Workflow
@@ -63,6 +69,9 @@ api/v1alpha1/       # CRD types (when doing K8s)
 - PRs must be up-to-date with main before merging
 - Rebase to update: `git pull --rebase origin main`
 - Never bypass hooks (`--no-verify`)
+- **Roster v1 addition:** human reviewer approval required on every PR before
+  auto-merge fires. Demo evidence (terminal recording + screenshots) must be present
+  under `demo/<date>-<feature>/` and linked in the PR description.
 
 ## Multi-Instance Port Management
 
