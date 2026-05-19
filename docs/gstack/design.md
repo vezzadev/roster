@@ -33,8 +33,9 @@ even they burn weeks on plumbing instead of building.
   ~$100-200/mo total.
 - Closest competitors (Ruh AI, Dust.tt) target existing companies augmenting human teams,
   not people spinning up new AI-native project teams from scratch.
-- Archestra (Aug 2025, $3.3M pre-seed, MIT-licensed): open-source enterprise MCP gateway
-  and guardrails platform from repeat Grafana/Elastic founders. Plugs into existing
+- [Archestra](https://archestra.ai/) (Aug 2025, $3.3M pre-seed, MIT-licensed):
+  open-source enterprise MCP gateway and guardrails platform from repeat
+  Grafana/Elastic founders. Plugs into existing
   enterprise stacks (Slack, Teams, Jira, Confluence, SharePoint) to make agent
   write-access safe against the "lethal trifecta." Different wedge from Roster:
   Archestra wraps an existing organization; Roster provisions a new project workspace
