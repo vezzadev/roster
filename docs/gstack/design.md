@@ -498,7 +498,9 @@ methodology skills:
 - **Test layers (all required):** unit (real code, mocks only at REST client boundaries
   to Nextcloud/Migadu/Letta), integration (testcontainers-go for real services),
   end-to-end (full `roster up → takeover → return → down` against Docker Compose),
-  stress (target: 50 consecutive E2E runs without flake before each release).
+  stress (10 consecutive E2E runs, async on every commit to main; auto-files an
+  issue if regression is detected; does NOT gate PR merges — see Refinements
+  "Test infrastructure" for the full policy).
 - **Subagent-driven implementation per feature.** Five-teammate team (tester,
   implementer, code-reviewer, demo-presenter, demo-reviewer). Coordinator never
   implements. Requires `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS`. Ref:
