@@ -85,6 +85,11 @@ Set via `PORT` environment variable.
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
 
+Any product/entrepreneurship discussion (ideas, strategy, scope, brainstorming, design
+system, full review pipelines) is handled via gstack skills with `./docs/gstack` as
+the working directory — `cd` there before invoking the skill so plans, design docs,
+and review artifacts land in that folder.
+
 Key routing rules:
 - Product ideas/brainstorming → invoke /office-hours
 - Strategy/scope → invoke /plan-ceo-review
@@ -98,3 +103,8 @@ Key routing rules:
 - Ship/deploy/PR → invoke /ship or /land-and-deploy
 - Save progress → invoke /context-save
 - Resume context → invoke /context-restore
+
+## AI collaboration preferences
+
+- **Codex second opinions:** Proactively offer to run Codex / get an independent AI cold read on strategy decisions, premise checks, design reviews, and gnarly debugging. Don't skip it to save 5 minutes — the user finds the cross-model perspective high-leverage.
+- **Web research:** Always OK with WebSearch / Firecrawl / Browserbase to refine ideas, validate assumptions, or close information gaps. No need to ask permission for general research; ask only before sending anything sensitive or identifying.
