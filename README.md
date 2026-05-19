@@ -33,19 +33,22 @@ Roster's bet: disposable, blended human/AI project teams become normal within
 - **Resume with context.** `roster return pm` restarts the agent with a
   catch-up directive — the agent uses its existing tools to read what
   happened while you were driving.
-- **Predictable cost.** ~$100–200/mo total for a 4-agent team, including
-  API calls. No token-burning factories.
 
 ## How it compares
 
-| | [Gas Town](https://github.com/sourcegraph/gas-town) | Roster |
-|---|---|---|
-| Domain | Coding agents only | Any project role |
-| Agent count | 20–30 parallel | 3–5 focused |
-| Cost | ~$100/hr token burn | ~$100–200/mo |
-| Communication | Internal git hooks | Real email, chat, files |
-| Identity | Disposable workers | Persistent roles with memory |
-| Human override | Mayor supervises | Become any role via GUI |
+| | [Gas Town](https://github.com/sourcegraph/gas-town) | [gstack](https://github.com/pedropaulovc/personal-marketplace) | Roster |
+|---|---|---|---|
+| Layer | Agent factory | Per-agent skill packs | Team provisioning |
+| Domain | Coding only | Any (skills like /qa, /ship, /review) | Any project role |
+| Agent count | 20–30 parallel | Augments one agent | 3–5 focused |
+| Communication | Internal git hooks | n/a (single agent) | Real email, chat, files |
+| Identity | Disposable workers | Inherits from host | Persistent roles with memory |
+| Human override | Mayor supervises | n/a | Become any role via GUI |
+
+gstack is complementary, not competitive: skills slot into a Roster role's
+`skills:` field and are resolved by the agent runtime at provisioning.
+Roster provisions the team and workspace; skill systems provide the
+agent's internal capabilities.
 
 Closest enterprise neighbor is [Archestra](https://archestra.ai/) — but
 Archestra wraps an existing organization, while Roster provisions a new
@@ -154,29 +157,11 @@ experiment alongside the product work):
 - **Demo evidence on every PR** (terminal recording + screenshots).
 - **Human approval mandatory** on every PR before auto-merge.
 
-These standards SUPERSEDE the "70% coverage" baseline inherited from the Go
-template. Full rationale in
-[`docs/gstack/design.md`](docs/gstack/design.md) → Development Standards.
-
-## Roadmap
-
-| Phase | Scope |
-|---|---|
-| **Week 1** | Validation spike — hand-configure Letta + 2 agents on a real project. Gating decision: do they produce useful output? |
-| **Week 2** | Module rename, Docker Compose generator, Nextcloud provisioner. |
-| **Week 3** | Migadu provisioner, MCP server for Nextcloud (Talk + Files), credential rotation. |
-| **Week 4–5** | CLI commands (init, up, down, takeover, return, status), Letta REST integration, E2E tests. |
-| **Week 6** | Polish, docs, first release. |
-
-**Calendar reality:** 10–12 weeks aspirational, 16–20 weeks realistic for a
-solo operator under the standards above. Week 6 is the re-baseline
-checkpoint.
-
 ## Dependencies
 
 - [Letta](https://letta.com/) — agent runtime (memory + lifecycle).
 - [Nextcloud](https://nextcloud.com/) — workspace (Talk, Files, Mail UI).
-- [Migadu](https://www.migadu.com/) — email ($19/mo flat, Admin API).
+- [Migadu](https://www.migadu.com/) — email (flat-rate hosting, Admin API).
 - [Claude API](https://www.anthropic.com/) — agent LLM calls.
 - Docker + Docker Compose.
 

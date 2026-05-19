@@ -59,7 +59,7 @@ where they conflict:
 - `go test -race ./...` must pass with zero failures
 - Coverage threshold: 70% (Roster v1 raises this — see design.md Development Standards)
 - New features require unit tests (Roster v1 requires unit + integration + E2E + stress)
-- No flaky tests — fix immediately (Roster v1 enforces via 50-consecutive-E2E gate)
+- No flaky tests — fix immediately (Roster v1 runs 10 consecutive E2E runs async on every commit to main; auto-files an issue on regression, does not gate PR merges)
 - Prefer table-driven tests with subtests
 
 ### Git Workflow
