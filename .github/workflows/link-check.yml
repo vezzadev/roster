@@ -20,3 +20,4 @@ jobs:
         with:
           args: --config lychee.toml --no-progress "**/*.md"
           fail: true
+          lycheeVersion: latest
