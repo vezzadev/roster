@@ -564,14 +564,36 @@ every credential-rotation step in the weeks below is built via TDD + subagent te
 demo evidence. The "10-12 weeks" timeline reflects this; the "6 weeks" callouts below
 are nominal scope phases, not calendar guarantees.
 
-**Week 1: Validation spike (highest-risk first).** Hand-configure Nextcloud + Letta + 2
-Letta agents on a real sample project -- no CLI, no automation, just `docker run` and
-manually written agent definitions. Validate Success Criterion #5: do the agents
+**Week 1: Validation spike (highest-risk first).** Hand-configure Nextcloud + Letta +
+**4 Letta agents (full team: EM + 2 Senior Analysts + Researcher)** on a real sample
+project -- no CLI, no automation, just `docker run` and manually written agent
+definitions. Plus one **2-agent smoke-test run, capped at 1 hour**, for ablation
+diagnosability (so a 4-agent failure can be localized to collaboration overhead vs
+prompt design vs tool friction). Validate Success Criterion #5: do the agents
 produce a meaningful artifact (a market-entry brief, draft strategy memo, or
-research synthesis) without human intervention? Time-box 1 week. **This is the
-gating decision.** In parallel (2-3 day time-box): investigate existing Nextcloud
-MCP servers. Outputs of Week 1 feed Week 2's provisioner design (what users/passwords/
-rooms does the agent setup actually need?).
+research synthesis) without human intervention? **The artifact spec is anchored to
+a public McKinsey/BCG market-entry brief** \-- agents target that section structure
+and depth, not a founder-invented rubric. Time-box 1 week (calendar reality: the
+MCP MVP work below is likely a 3-day from-scratch build, so plan for 1.5-2 weeks
+realistic). **This is the gating decision.** In parallel: investigate existing
+Nextcloud MCP servers; the investigation must answer **API coverage (Talk +
+Files operations needed) and room-management fit (one #team room + per-pair DMs
+require specific MCP capabilities)**, not just existence \-- if no community
+server covers the needed ops, ~3 days to build a minimal Talk+Files MCP MVP that
+unblocks the spike. Q7 (Nextcloud OIDC) and Q8 (Migadu OAUTH2 SASL) are deferred
+to week 1.5 \-- they affect takeover UX, not spike validity. Q9 (Letta SPOF):
+log natural disconnects during the spike + run **one forced `kill -9` of the
+Letta server** mid-spike to observe reconnect/catch-up behavior (full 3-scenario
+test deferred to v1.x). Cost tracking: **hourly Anthropic usage exports with
+mid-week and end-week trendline checks** \-- topline signal that SC#6 ($200/mo)
+is on track; full per-call instrumentation deferred to weeks 5-6. Outputs of
+Week 1 feed Week 2's provisioner design (what users/passwords/rooms does the
+agent setup actually need?). All spike outputs live in **`docs/gstack/week-1-spike/`**
+under named files (see Refinements from /plan-eng-review for the full list).
+Prompt freeze per numbered run + run matrix in `run-ledger.md` \-- no
+undocumented prompt thrash. Before the spike: 30-min exercise to write 3-4
+bullet alternatives for likely failure modes (Letta unfit, agents don't
+coordinate, output unusable) so "pivot or stop" has pre-committed exits.
 
 **Week 2:** Module rename (`go-project` -> `roster`), Docker Compose generator,
 Nextcloud provisioner (create users, app passwords, Talk rooms). Encode the manual
@@ -649,9 +671,17 @@ management only.
    strategy memo, or research synthesis) without human intervention on a sample
    project -- validate this BEFORE any provisioning code lands by manually running
    agents against a sample brief (Week 1). This is the gating decision for
-   proceeding with weeks 2-6. **External-reviewer bar (added 2026-05-19):** the
-   artifact should be rated by at least one practicing analyst/consultant as
-   "8+ hours of manual work saved" or better.
+   proceeding with weeks 2-6. **External-validation bar (revised by
+   /plan-eng-review 2026-05-19):** founder self-grades the spike artifact against
+   the anchored public McKinsey/BCG market-entry brief; before any time/money is
+   spent on a practicing analyst, a **multi-AI opinion panel** (Codex + Claude +
+   others) reviews the artifact against the same spec. Only if the AI panel
+   signal is positive does the project pay for a practicing analyst review (week
+   2 first 3 days). The 8h-saved bar, when an analyst review happens, is
+   normalized to **text-deliverable-equivalent hours** (artifact-vs-artifact, not
+   artifact-vs-full-consulting-engagement). Carried risk acknowledged: Codex
+   rated the self-grade pathway CRITICAL for motivated reasoning; the AI panel
+   substitution is the mitigation \-- see /plan-eng-review refinements.
 6. Total infrastructure cost stays under $200/mo for a 4-agent team
 
 ## Distribution Plan
@@ -789,7 +819,10 @@ adds three new ones:
    reachable in v1.x. Investigation: Week 1.
 9. **Letta SPOF behavior under failure:** When the headless container loses WebSocket
    to the server, what happens to in-flight agent actions? When the server comes back,
-   does the agent catch up automatically? Empirical answer in Week 1 validation.
+   does the agent catch up automatically? Week 1 validation = reactive logging of
+   any natural disconnects + **one forced `kill -9` of the Letta server mid-spike**
+   to observe reconnect/catch-up. Full 3-scenario test (clean WS close, kill -9,
+   60s sustained outage) deferred to v1.x \-- carried risk acknowledged.
 
 ### Acceptance Criteria additions (from CEO plan)
 
@@ -847,3 +880,124 @@ as the explicit re-baseline checkpoint.
     the agent never sees them directly? If so, exfiltration becomes architectural-
     not-policy. Investigation: v1.x research; document outcome before any "hard
     kill" language returns to Premise 3.
+
+## Refinements from /plan-eng-review (2026-05-19)
+
+Eight decisions resolved on Week 1 scope, plus four cross-model challenges from
+Codex (outside voice), plus the user's substitutions/upgrades on the carried
+risks. Bullets below are the in-doc summary; full transcript lives in this
+session's review log.
+
+### Decisions on Week 1 scope
+
+- **D1 (4 agents in spike):** Full team (EM + 2 Senior Analysts + Researcher),
+  not 2. Plus one **2-agent smoke-test run capped at 1 hour** for ablation
+  diagnosability (Codex T4-A).
+- **D2 (artifact spec anchored to public consulting brief):** Spike targets a
+  public McKinsey/BCG market-entry primer section structure, not a
+  founder-invented rubric. Spec lives in
+  `docs/gstack/week-1-spike/grading-rubric.md` before the spike runs.
+- **D3 + T1 (self-grade week 1 + AI panel before paid analyst):** Founder
+  self-grades against the public-brief spec in week 1. A **multi-AI opinion
+  panel** (Codex + Claude + others) reviews the artifact before any human
+  analyst is recruited; paid analyst review happens only if AI panel signal is
+  positive (week 2 first 3 days). 8h-saved bar normalized to
+  text-deliverable-equivalent hours.
+- **D4 (rank investigations; MCP only is week-1 blocking):** Week 1 = spike +
+  MCP investigation. Q7 (Nextcloud OIDC) and Q8 (Migadu OAUTH2 SASL) move to
+  week 1.5. **MCP investigation must answer API coverage and
+  room-management fit** (Codex T4-B), not just existence \-- anticipate a
+  3-day MVP build of a minimal Talk+Files MCP if no community server fits.
+  Calendar reality: Week 1 likely overruns to 1.5-2 weeks.
+- **D5 + T2 (lightweight fallback bullets, not a tree):** 30-min pre-spike
+  exercise to write 3-4 bullet alternatives for likely failure modes (Letta
+  unfit, agents don't coordinate, output unusable). Pre-committed exits
+  without a rigid decision tree. Codex rated the original "no tree" CRITICAL;
+  lightweight bullets are the mitigation.
+- **D6 + T4-C (expanded spike output folder):** `docs/gstack/week-1-spike/`
+  contains: `system-prompts.md` (final working prompts per role),
+  `what-didnt-work.md` (running journal of dead ends),
+  `mcp-investigation.md` (community servers found, API coverage, decision),
+  `sample-brief.md` (the produced artifact), `run-ledger.md` (timestamped
+  events per run + prompt hash + agent versions + outcomes),
+  `grading-rubric.md` (the public-brief-anchored rubric used for
+  self-grading), `env-manifest.md` (Docker / Letta / Nextcloud / model
+  versions), `event-timeline.md` (agent-to-agent message timeline for
+  debugging), `spike-cost.md` (cost-tracking summary, see below).
+- **D7 + T3 (one forced SPOF test):** During the spike, **one `kill -9` of
+  the Letta server** is run mid-flight to observe reconnect/catch-up; natural
+  disconnects logged reactively. Full 3-scenario empirical test (clean WS
+  close, kill -9, 60s sustained outage) deferred to v1.x. Codex rated this
+  HIGH; one-forced-kill is the mitigation.
+- **D8 + T3 (hourly usage exports + trendlines):** Anthropic API usage
+  exports captured **hourly** during the spike, with **mid-week and
+  end-week trendline checks** against SC#6 ($200/mo target). No in-spike
+  per-call instrumentation; signal via Anthropic usage endpoint at higher
+  cadence. Full per-call instrumentation deferred to weeks 5-6.
+- **T4-D (prompt discipline):** **Prompt freeze per numbered run** + a run
+  matrix committed to `run-ledger.md`. No undocumented prompt thrash; one
+  "lucky artifact" from invisible prompt iteration is not validation. Codex
+  rated the absence of this discipline HIGH and a review blind spot.
+
+### Codex tensions (outside voice, 2026-05-19)
+
+Codex reviewed the eight decisions above and rated the user's against-recommendation
+choices CRITICAL (D3, D5) or HIGH (D7, D8). Tensions resolved:
+
+| Tension | Codex severity | Resolution |
+|---|---|---|
+| T1 / D3 | CRITICAL: self-grade is fake gate | User added multi-AI opinion panel before paid analyst (mitigation) |
+| T2 / D5 | CRITICAL: no tree = motivated reasoning trap | User accepted lightweight 3-4 bullet alternatives (compromise) |
+| T3 / D7 | HIGH: reactive SPOF = waiting for luck | User accepted one forced kill -9 (minimal upgrade) |
+| T3 / D8 | HIGH: deferred cost punts SC#6 | User accepted hourly usage exports + trendlines (no in-spike code) |
+| T4-A | MEDIUM: D1 reduces diagnosability without ablation | User accepted 1h smoke-test 2-agent control run |
+| T4-B | MEDIUM: MCP "exists" is not enough | User accepted: investigate API coverage + room fit; anticipate 3-day MVP build |
+| T4-C | MEDIUM: spike folder missing observability files | User accepted full file set (run-ledger, rubric, env-manifest, event-timeline) |
+| T4-D | HIGH (new): no prompt freeze = irreproducible | User accepted run matrix + prompt freeze per numbered run |
+
+### Carried risks acknowledged
+
+- Self-grade pathway remains a real risk if the AI opinion panel signal is
+  weakly positive but not decisive; founder must commit to honest reading.
+- Lightweight bullets (T2) may be ignored at the failure moment; the
+  discipline depends on the founder.
+- One forced kill -9 (T3) is a single data point; full SPOF empirical answer
+  carries to v1.x.
+- Cost trendlines (T3/D8) catch gross overruns but miss per-agent cost
+  attribution; per-call instrumentation still needed by week 5.
+
+### Week 1 calendar re-baseline
+
+Original framing: "Week 1 = 5 working days." Post-review framing: **"Week 1 =
+1.5-2 weeks realistic"** given the MCP MVP work (3 days), the 4-agent setup,
+the artifact spec authoring, the AI panel review, the smoke-test ablation
+run, and the prompt-freeze discipline overhead. The CEO plan's overall
+10-12 aspirational / 16-20 realistic envelope absorbs this; flag in the
+week-6 re-baseline checkpoint if Week 1 closes later than day 10.
+
+## GSTACK REVIEW REPORT
+
+| Review | Trigger | Why | Runs | Status | Findings |
+|--------|---------|-----|------|--------|----------|
+| CEO Review | `/plan-ceo-review` | Scope & strategy | 1 | clean (2026-05-18) | scope-reduction round + 5 Codex tensions resolved |
+| Codex Review | `/codex review` | Independent 2nd opinion | 2 | issues_addressed | 5 tensions resolved 2026-05-18; 8 tensions resolved 2026-05-19 |
+| Eng Review | `/plan-eng-review` | Architecture & tests (required) | 1 | issues_addressed (2026-05-19) | 8 decisions on Week 1; 3 user-revised post-Codex; 4 Codex new findings adopted |
+| Design Review | `/plan-design-review` | UI/UX gaps | 0 | — | (no UI in v1 beyond Nextcloud built-ins) |
+| DX Review | `/plan-devex-review` | Developer experience gaps | 0 | — | (deferred until CLI surface exists) |
+
+**CODEX:** Independent challenge on 8 Week-1 decisions surfaced 4 critical/high
+tensions on user against-recommendation choices (D3, D5, D7, D8) plus 4 new
+findings (ablation, MCP depth, observability files, prompt discipline). User
+revised D3 (added AI opinion panel), D5 (added bullet alternatives), D7 (added
+forced kill -9), D8 (added hourly trendlines); adopted all 4 new findings.
+
+**CROSS-MODEL:** Claude reviewer and Codex agreed Week 1 was overpacked and
+artifact spec was undefined. Disagreed on rigor level for SPOF, cost tracking,
+and fallback planning; user landed in the middle on all three.
+
+**UNRESOLVED:** 0. All eight initial decisions and four cross-model tensions
+have user-confirmed resolutions in this doc.
+
+**VERDICT:** ENG REVIEW CLEARED with carried risks documented. The four carried
+risks listed above are accepted by the user and should be re-examined at the
+end of Week 1 / start of Week 2.
