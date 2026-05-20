@@ -1,0 +1,22 @@
+name: CI - Markdown Links
+
+# Runs on every PR (no path filter). Lychee in offline mode finishes in
+# under 2 seconds against the whole repo, so gating on changed paths is
+# not worth the complexity — and it lets this be a required status check
+# without needing a sibling no-op workflow to satisfy branch protection.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  link-check:
+    runs-on: ubuntu-slim
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check internal markdown links
+        uses: lycheeverse/lychee-action@v2
+        with:
+          args: --config lychee.toml --no-progress "**/*.md"
+          fail: true

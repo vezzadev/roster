@@ -1,0 +1,14 @@
+# Lychee link checker config.
+# Internal-only: validates relative file paths and anchors between markdown
+# files. External http(s) URLs are not requested (no network flakiness in CI).
+
+offline = true
+
+exclude_path = [
+  "node_modules",
+  ".git",
+  "bin",
+  "dist",
+  "tmp",
+  "coverage.html",
+]
