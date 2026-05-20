@@ -164,7 +164,14 @@ risks.
   [spike-cost.md](../week-1-spike/spike-cost.md) (cost-tracking summary, see below).
   T2's fallback bullets land in
   [fallback-bullets.md](../week-1-spike/fallback-bullets.md) (not part of the
-  original 9-file set; added by the T2 pre-spike exercise).
+  original 9-file set; added by the T2 pre-spike exercise). The contamination
+  guard adds an 11th file:
+  [researcher-urls.md](../week-1-spike/researcher-urls.md) — append-only log
+  of every URL the Researcher fetches (audit trail for Layer 1 + Layer 2
+  contamination detection; see
+  [grading-rubric.md](../week-1-spike/grading-rubric.md) "Contamination guard"
+  and [mcp-investigation.md](../week-1-spike/mcp-investigation.md) "Network
+  and ACL policy").
 - **D7 + T3 (one forced SPOF test):** During the spike, **one `kill -9` of
   the Letta server** is run mid-flight to observe reconnect/catch-up; natural
   disconnects logged reactively. Full 3-scenario empirical test (clean WS

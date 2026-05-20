@@ -108,3 +108,66 @@ When wiring cbcoutinho into the spike's `docker-compose.yml`:
 - Create the `#team` room and the per-pair DM rooms manually via Nextcloud admin or `occ talk:room:create` before the agents start (the provisioner work belongs to Week 2; for Week 1 manual setup is fine and feeds [run-ledger.md](run-ledger.md) "Run N setup" notes).
 
 See [Official Nextcloud MCP Server proposal (nextcloud/server #53211)](https://github.com/nextcloud/server/issues/53211) for the upstream conversation about an official server — track it for Week 2-6 if cbcoutinho stalls.
+
+## Network and ACL policy (contamination guard)
+
+Enforces Layer 1 + Layer 2 of [grading-rubric.md](grading-rubric.md) "Contamination guard". Both policies MUST be in place before Run 1 begins; verify in [run-ledger.md](run-ledger.md) "Run N setup".
+
+### Nextcloud Files folder ACLs
+
+Two top-level folders with disjoint access:
+
+| Folder | Read | Write | Contents |
+|--------|------|-------|----------|
+| `/agents/` | EM, Senior A, Senior B, Researcher | EM, Senior A, Senior B, Researcher | Working files, draft brief, internal notes, the produced [sample-brief.md](sample-brief.md) artifact (synced out at end of run) |
+| `/founder/` | founder only | founder only | [grading-rubric.md](grading-rubric.md), comparator brief PDFs (if downloaded for offline reference), AI-panel review file, anything mentioning the rubric, dimensions, or scoring |
+
+The four agent app-passwords MUST have **zero** permissions on `/founder/`. Verify via Nextcloud admin UI before Run 1: log in as each agent user, confirm `/founder/` is invisible. Record the verification in [run-ledger.md](run-ledger.md).
+
+The Roster provisioner (Week 2 work) will encode this ACL structure as part of `roster up`; for Week 1 manual setup is fine.
+
+### Researcher domain blocklist
+
+The Researcher role is the only agent with web access (per design — EM, Senior Analysts do not fetch URLs directly). Block the following at the Researcher's tool layer or via an outbound HTTP proxy:
+
+**Hard block (consulting firm primary domains):**
+
+- `bcg.com`, `web-assets.bcg.com`, `bcghendersoninstitute.com`
+- `mckinsey.com`, `mckinseyandcompany.com`
+- `bain.com`, `media.bain.com`
+- `strategyand.pwc.com`, `pwc.com/consulting` (Strategy&)
+- `monitordeloitte.com`, `deloitte.com/insights/strategy`
+- `rolandberger.com`
+- `oliverwyman.com`
+- `lek.com`
+- `kearney.com`, `middleeast.kearney.com`
+
+**Hard block (mirrors and archives of the above):**
+
+- Any `web.archive.org/web/*/bcg.com/...` or similar archived consulting-firm URL
+- SlideShare paths matching `slideshare.net/.../bcg-*`, `slideshare.net/.../mckinsey-*`, etc.
+- `scribd.com` paths matching consulting-firm titles
+- `documentcloud.org` paths matching consulting-firm titles
+
+**Allow-list exception (gray zone):**
+
+- `economysea.withgoogle.com` and `https://www.bain.com/insights/e-conomy-sea-*` — the Google-Temasek-Bain e-Conomy SEA report is the canonical SEA market-sizing source and is a published industry report (different genre than a market-entry brief). Allowing it loses the spike if it turns out the Researcher heavily templates from it; the post-spike verbatim check catches that.
+- Trade press, news outlets, World Bank, IMF, government statistics offices, industry trade associations — all permitted.
+
+**Enforcement:**
+
+Pick the tightest option that the Researcher's tool surface supports:
+
+1. **MCP-level allow-list / block-list** in the Researcher's tool definition — if the MCP server for web fetching supports per-tool URL filtering.
+2. **Outbound HTTP proxy** (e.g., Squid) on the Docker network, configured with the blocklist; Researcher's HTTP_PROXY env var points at it.
+3. **Last resort: trust + audit.** The Researcher self-reports every URL to [researcher-urls.md](researcher-urls.md); blocklist violations are caught at audit time, not at fetch time. Weakest control — contamination has already occurred by the time you read it.
+
+For Week 1 spike, **prefer #2 (outbound proxy)**. Squid with a `dstdomain` ACL list takes ~30 minutes to configure.
+
+### Verification checklist (before Run 1)
+
+- [ ] `/founder/` invisible to all four agent accounts (tested by logging in as each).
+- [ ] Researcher's outbound proxy is up and the blocklist is loaded.
+- [ ] `curl -x http://squid:3128 https://www.bcg.com/` from the Researcher container returns 403 / blocked.
+- [ ] `curl -x http://squid:3128 https://www.worldbank.org/` from the Researcher container returns 200 (allow-list still works).
+- [ ] [researcher-urls.md](researcher-urls.md) is initialized and Researcher is wired to append to it on every fetch.

@@ -50,6 +50,66 @@ Codex T1 (CRITICAL): self-grade is motivated-reasoning-prone. Mitigations:
 2. **For each "3+" score, name a specific quote from [sample-brief.md](sample-brief.md) that justifies it** — no score without evidence.
 3. **The multi-AI opinion panel grades against this same rubric independently** — divergence > 1 point on any dimension is a flag.
 
+## Contamination guard
+
+A high score is meaningless if the brief is paraphrased from a public consulting brief the agents fetched or recalled from training. Three layers of contamination risk; the first two are addressable, the third is detectable post-hoc only.
+
+| Layer | Risk | Addressable? |
+|---|---|---|
+| 1 — Direct comparator access | Agents fetch BCG Vietnam (or one of the other 5 anchor briefs) and paraphrase | ✅ pre-spike controls |
+| 2 — Adjacent-brief plagiarism | Agents fetch a different Big-3 SEA / Indonesia brief and copy its structure / insights | ⚠️ partially — domain blocklist catches verbatim, not derivative recall |
+| 3 — Latent training-data leakage | Model has seen Big-3 briefs in training and reproduces them from memory without web access | ❌ not eliminable; detectable post-hoc only |
+
+### Controls (colocated with enforcement)
+
+| Control | Layer | Where enforced |
+|---|---|---|
+| Rubric / comparator URLs not in any agent-readable file | 1 | Nextcloud Files ACL: `/agents/` vs `/founder/` — see [mcp-investigation.md](mcp-investigation.md) "Network and ACL policy" |
+| System prompts never mention the comparator brief, "McKinsey / BCG / Bain", or the 8 rubric dimensions | 1, 2, Goodhart | [system-prompts.md](system-prompts.md) "Prompt sanitization rules" |
+| Consulting-firm domain blocklist for the Researcher | 1, 2 | [mcp-investigation.md](mcp-investigation.md) "Network and ACL policy" |
+| URL fetch log for every Researcher fetch | 1, 2 detection | [researcher-urls.md](researcher-urls.md) |
+| Verbatim 7-gram match check post-spike | 1 detection | This file — "Post-spike checks" below |
+| AI-panel "derivative check" — name a suspected source brief | 2, 3 | This file — "Panel-only checks" below |
+| Reverse-grade against a non-Big-3 anchor | 2, 3 | This file — "Panel-only checks" below |
+
+### Post-spike checks
+
+Run these against [sample-brief.md](sample-brief.md) before any positive gate decision. Failure on any of them downgrades the gate by one tier (strong → weakly positive, weakly positive → negative).
+
+**Verbatim match check (7-gram, against 5 anchor briefs):**
+
+1. Extract plain-text of [sample-brief.md](sample-brief.md) and the 5 anchor PDFs (the BCG/McKinsey/Bain URLs above).
+2. Generate all 7-word sequences from each.
+3. Intersect sample-brief's 7-grams against each anchor's 7-grams.
+4. Flag any non-trivial hit (excludes common phrases — e.g., "in the next five to ten years" is uninteresting; "the four success factors for entrants are" is a hit).
+5. Threshold: **zero non-trivial hits** = pass. **≥ 1 non-trivial hit** = fail Layer 1; investigate.
+
+Cheap implementation: a 20-line Python script with `nltk` or a shell pipeline (`tr`, `awk`, `sort`, `comm`). No external service needed.
+
+**Researcher URL audit:**
+
+Open [researcher-urls.md](researcher-urls.md). For each logged fetch, verify:
+
+- Domain is not on the consulting-firm blocklist.
+- Domain is not an archive/mirror of a blocklisted domain (`web.archive.org/.../bcg.com/...`, SlideShare hosting BCG decks, etc.).
+- Fetched content snippet does not name a Big-3 firm as the source of cited statistics or structure.
+
+If any fetch evaded the blocklist, the sample-brief is contaminated; reset and re-run with the blocklist hardened.
+
+### Panel-only checks
+
+Add these to the multi-AI opinion panel's review prompt (in addition to scoring the 8 dimensions):
+
+> **Derivative check:** Does this brief read as derivative of any specific public consulting brief you can name? If yes, name the suspected source (firm + title + year if you can). If you suspect derivation but cannot name a source, say so. Be explicit about confidence.
+
+> **Reverse-grade:** Score this brief against an *independent* rubric — the IDEO / d.school case-write-up format (problem framing → user research → solution alternatives → prototype → validation). If the brief scores well against both the Big-3 market-entry rubric AND a structurally different framework, that's evidence of genuine analysis, not template-matching. If it scores well against only the Big-3 rubric, that's a Goodhart signal.
+
+The panel's derivative-check verdict and reverse-grade score are recorded in the AI-panel review file (created during T8; see [../design/07-refinements.md](../design/07-refinements.md) T1).
+
+### What this does NOT eliminate
+
+Layer 3 is real and unfixable from inside the spike. A motivated brief that reorganizes prose without verbatim copy can still be derivative of internalized training data. The honest gate is not "did the agents reason from first principles" (unprovable) but "does this look like work an analyst would trust." The contamination guard raises the floor; the AI-panel review + (later) practicing-analyst review raise the ceiling. The Codex T1 mitigation chain stands.
+
 ## Self-grade
 
 | # | Dimension | Score | Evidence quote |
