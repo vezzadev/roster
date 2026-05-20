@@ -14,18 +14,22 @@ Parent: [../design.md](../design.md)
    strategy memo, or research synthesis) without human intervention on a sample
    project -- validate this BEFORE any provisioning code lands by manually running
    agents against a sample brief (Week 1). This is the gating decision for
-   proceeding with weeks 2-6. **External-validation bar (revised by
-   /plan-eng-review 2026-05-19):** founder self-grades the spike artifact against
-   the anchored public McKinsey/BCG market-entry brief; before any time/money is
-   spent on a practicing analyst, a **multi-AI opinion panel** (Codex + Claude +
-   others) reviews the artifact against the same spec. Only if the AI panel
-   signal is positive does the project pay for a practicing analyst review (week
-   2 first 3 days). The 8h-saved bar, when an analyst review happens, is
-   normalized to **text-deliverable-equivalent hours** (artifact-vs-artifact, not
-   artifact-vs-full-consulting-engagement). Carried risk acknowledged: Codex
-   rated the self-grade pathway CRITICAL for motivated reasoning; the AI panel
-   substitution is the mitigation \-- see [07-refinements.md](07-refinements.md).
-6. Total infrastructure cost stays under $200/mo for a 4-agent team
+   proceeding with weeks 2-6. Spike artifact lands in
+   [../week-1-spike/sample-brief.md](../week-1-spike/sample-brief.md). **External-validation
+   bar (revised by /plan-eng-review 2026-05-19):** founder self-grades the spike
+   artifact against the anchored public McKinsey/BCG market-entry brief (rubric
+   in [../week-1-spike/grading-rubric.md](../week-1-spike/grading-rubric.md));
+   before any time/money is spent on a practicing analyst, a **multi-AI opinion
+   panel** (Codex + Claude + others) reviews the artifact against the same spec.
+   Only if the AI panel signal is positive does the project pay for a practicing
+   analyst review (week 2 first 3 days). The 8h-saved bar, when an analyst
+   review happens, is normalized to **text-deliverable-equivalent hours**
+   (artifact-vs-artifact, not artifact-vs-full-consulting-engagement). Carried
+   risk acknowledged: Codex rated the self-grade pathway CRITICAL for motivated
+   reasoning; the AI panel substitution is the mitigation \-- see
+   [07-refinements.md](07-refinements.md).
+6. Total infrastructure cost stays under $200/mo for a 4-agent team. Spike-period
+   tracking in [../week-1-spike/spike-cost.md](../week-1-spike/spike-cost.md).
 
 Additional acceptance criteria from /plan-ceo-review (2026-05-18):
 
@@ -62,7 +66,9 @@ Additional acceptance criteria from /plan-ceo-review (2026-05-18):
    does the agent catch up automatically? Week 1 validation = reactive logging of
    any natural disconnects + **one forced `kill -9` of the Letta server mid-spike**
    to observe reconnect/catch-up. Full 3-scenario test (clean WS close, kill -9,
-   60s sustained outage) deferred to v1.x \-- carried risk acknowledged.
+   60s sustained outage) deferred to v1.x \-- carried risk acknowledged. Forced-kill
+   verdict captured in
+   [../week-1-spike/run-ledger.md](../week-1-spike/run-ledger.md) "Forced SPOF" section.
 10. **MCP proxy sidecar viability:** Can an MCP proxy sidecar between the agent
     runtime and tool servers (Nextcloud MCP, email) hold credentials such that
     the agent never sees them directly? If so, exfiltration becomes architectural-
