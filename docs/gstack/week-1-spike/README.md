@@ -2,7 +2,7 @@
 
 Parent: [../design.md](../design.md) · Spec: [../design/05-implementation.md](../design/05-implementation.md) Week 1 · [../design/07-refinements.md](../design/07-refinements.md) D1-D8 + T4-A/B/C/D
 
-This folder is where the Week 1 validation spike lives. Files are prefixed with the task ID (T1-T8) that owns their content, sourced from [tasks-eng-review-20260519-181046.jsonl](../../../../.gstack/projects/vezzadev-roster/tasks-eng-review-20260519-181046.jsonl) (path is outside the repo; the JSONL is the canonical task list emitted by `/plan-eng-review` on 2026-05-19).
+This folder is where the Week 1 validation spike lives. Files are prefixed with the task ID (T1-T8) that owns their content, sourced from the canonical task list emitted by `/plan-eng-review` on 2026-05-19: `~/.gstack/projects/vezzadev-roster/tasks-eng-review-20260519-181046.jsonl` (lives outside the repo, not a clickable link).
 
 ## Gating decision
 
