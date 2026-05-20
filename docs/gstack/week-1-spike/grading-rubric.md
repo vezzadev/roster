@@ -6,11 +6,26 @@ Parent: [../design.md](../design.md) · Spec: [../design/06-validation.md](../de
 
 ## Anchor
 
-The rubric is anchored to a **publicly available McKinsey / BCG / Bain market-entry brief**, not a founder-invented spec. Codex T1: a founder-invented rubric is a fake gate.
+The rubric is anchored to **publicly available Big-3 market-entry briefs**, not a founder-invented spec. Codex T1: a founder-invented rubric is a fake gate.
 
-- Public comparator brief: _TBD — link before spike starts_
-- Why this comparator: _TBD — match industry / depth / format_
-- Sections of the comparator brief used as the rubric structure: _TBD_
+Honest framing: Big-3 firms rarely publish full client market-entry decks (those are confidential). The closest public analogues are firm-published thought-leadership pieces that follow market-entry structure. The set below has been verified accessible (PDFs hosted on the firms' own domains as of 2026-05).
+
+**Primary comparator: BCG, "Vietnam: A Global Engine of Growth" (2023)**
+- URL: https://web-assets.bcg.com/2c/b0/af4990ba41bf8be7e6301789a7be/vietnam-a-global-engine-of-growth.pdf
+- Why this one: Full slide deck, geography-entry framing, recent (2023), covers macro indicators → sector deep-dives → success factors → entry recommendations. Closest to the canonical market-entry brief shape in the verified set.
+- Sections used as rubric structure: Executive summary → market context (macro/social) → sector deep-dives → "4 success factors for entrants" → market-entry recommendations.
+
+**Secondary comparator: McKinsey Quarterly, "Beating the Odds in Market Entry" (Horn, Lovallo, Viguerie, 2005)**
+- URL: https://www.mckinsey.com/~/media/McKinsey/Business%20Functions/Strategy%20and%20Corporate%20Finance/Our%20Insights/Beating%20the%20odds%20in%20market%20entry/Beating%20the%20odds%20in%20market%20entry.pdf
+- Why this one: Meta-rubric source. Names the 6 predictors (scale, relatedness, complementary assets, order of entry, life-cycle stage, tech innovation) and 5 inside-view dimensions (value prop, market size, competition, share/revenue, costs) that practicing analysts actually use. Use this when scoring rubric dimensions 2-7 for "is this how a Big-3 analyst would frame it?"
+
+**Additional references (for AI-panel and structure cross-checks):**
+
+- BCG, "Foreign E-Tailers Are Here! Is South African E-Commerce Ready?" (Nov 2024) — https://web-assets.bcg.com/b5/b4/333e56944145a10f0d57408b8067/foreign-e-tailers-are-here-is-south-african-e-commerce-ready-3.pdf — inverse angle (defense vs entry).
+- Bain, "Are You Ahead of the Curve in Emerging Markets?" (~2012) — https://media.bain.com/Images/INDUSTRY_BRIEF_Ahead_of_curve_in_emerging_markets.pdf — bifurcated tracks (enter-vs-defend) pattern.
+- BCG, "Changing Your Orbit" India (Jun 2014) — https://web-assets.bcg.com/img-src/Changing-Your-Orbit-Jun-2014-India_tcm9-28793.pdf — explicit 3-step entry framework.
+
+**Structural pattern observed across all five:** context/sizing → competitive landscape → 3-6 success-factor framework → entry-mode or strategic-option decision → recommendation, often bifurcated (enter-vs-defend or aggressive-vs-cautious). The 8 rubric dimensions below were drafted to map onto this pattern.
 
 ## Dimensions
 

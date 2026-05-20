@@ -10,7 +10,7 @@ Per the run matrix in [run-ledger.md](run-ledger.md), prompts are frozen per num
 
 ## Engagement Manager (EM)
 
-Model: _TBD (Opus per design.md cost model)_
+Model: claude-opus-4-7 (per design Cost Model — synthesis role)
 Frozen for run: _none yet_
 Hash: _none yet_
 
@@ -20,7 +20,7 @@ Hash: _none yet_
 
 ## Senior Analyst A
 
-Model: _TBD (Sonnet)_
+Model: claude-sonnet-4-6 (per design Cost Model)
 Frozen for run: _none yet_
 Hash: _none yet_
 
@@ -30,7 +30,7 @@ Hash: _none yet_
 
 ## Senior Analyst B
 
-Model: _TBD (Sonnet)_
+Model: claude-sonnet-4-6 (per design Cost Model)
 Frozen for run: _none yet_
 Hash: _none yet_
 
@@ -40,7 +40,7 @@ Hash: _none yet_
 
 ## Researcher
 
-Model: _TBD (Sonnet)_
+Model: claude-sonnet-4-6 (per design Cost Model)
 Frozen for run: _none yet_
 Hash: _none yet_
 

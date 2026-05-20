@@ -45,12 +45,14 @@ Repeat this block per run (Run 1, Run 2, …). Stamp the timestamp at the start 
 
 #### Models
 
+Per design Cost Model: EM on Opus for synthesis (~3x Sonnet cost); other three roles on Sonnet. Pin exact model ID per run.
+
 | Role | Provider | Model ID | Notes |
 |------|----------|----------|-------|
-| EM | Anthropic | _e.g., claude-opus-4-7_ | |
-| Senior Analyst A | Anthropic | _e.g., claude-sonnet-4-6_ | |
-| Senior Analyst B | Anthropic | _e.g., claude-sonnet-4-6_ | |
-| Researcher | Anthropic | _e.g., claude-sonnet-4-6_ | |
+| EM | Anthropic | claude-opus-4-7 | Synthesis role; per design Cost Model |
+| Senior Analyst A | Anthropic | claude-sonnet-4-6 | |
+| Senior Analyst B | Anthropic | claude-sonnet-4-6 | |
+| Researcher | Anthropic | claude-sonnet-4-6 | |
 
 #### MCP server(s)
 
