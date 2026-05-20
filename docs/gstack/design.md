@@ -76,4 +76,4 @@ for a full walk-through, or jump to the section you need:
 - CEO plan: `~/.gstack/projects/vezzadev-roster/ceo-plans/2026-05-18-roster-v1.md`
 - Test plan: `~/.gstack/projects/vezzadev-roster/pedro-docs-build-in-public-strategy-eng-review-test-plan-20260519-180946.md`
 - Build-in-public strategy: [research/strategy-build-in-public.md](research/strategy-build-in-public.md)
-- Week 1 spike outputs (to be created): `docs/gstack/week-1-spike/`
+- Week 1 spike outputs: [`week-1-spike/`](week-1-spike/) — see [week-1-spike/README.md](week-1-spike/README.md) for the task → file index and per-task status. Files are prefixed `t1-` … `t8-` by owning task; the README explains each.
