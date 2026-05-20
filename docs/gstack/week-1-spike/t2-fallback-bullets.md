@@ -25,7 +25,7 @@ Alternatives, lightest first:
 - **Drop to raw Anthropic API + thin orchestration script.** Skip Letta entirely; coordinate the four agents via a single Python script that maintains conversation state in-process. Loses persistence between runs but removes the Letta variable. Cost: 1 day. Test: can a 4-agent run complete with no runtime crashes?
 - **Try Letta with single-process embedded mode (no headless container split).** Eliminate the WebSocket layer that's the suspected SPOF. Cost: half a day. Test: same as above.
 - **Swap to a different agent runtime (Claude Agent SDK direct, or AutoGen).** Bigger pivot, but if Letta is structurally unfit the whole Premise 3 needs revisiting. Cost: 2-3 days for re-spike. Test: does the failure reproduce on a different substrate? If no, Letta is the issue; if yes, it's elsewhere.
-- **Stop and re-baseline.** If three runtimes fail similarly, the issue is in the design (the agent design, the tools surface, or the prompts), not the runtime. Open `what-didnt-work.md`, write up the cross-runtime evidence, and call the gate.
+- **Stop and re-baseline.** If three runtimes fail similarly, the issue is in the design (the agent design, the tools surface, or the prompts), not the runtime. Open `t5-what-didnt-work.md`, write up the cross-runtime evidence, and call the gate.
 
 ## Failure mode 2: Agents don't coordinate
 
@@ -53,7 +53,7 @@ Alternatives, lightest first:
 
 ## Honesty guard
 
-After applying any bullet: write up what happened in [what-didnt-work.md](what-didnt-work.md) **before** declaring success or failure. The bullets are alternatives to invent-on-the-spot; they are not exemptions from the journal discipline.
+After applying any bullet: write up what happened in [t5-what-didnt-work.md](t5-what-didnt-work.md) **before** declaring success or failure. The bullets are alternatives to invent-on-the-spot; they are not exemptions from the journal discipline.
 
 ## Carried risk
 

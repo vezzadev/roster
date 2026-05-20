@@ -1,6 +1,6 @@
 # Grading Rubric
 
-Public-brief-anchored rubric used for self-grading the spike's [sample-brief.md](sample-brief.md) and as input to the multi-AI opinion panel.
+Public-brief-anchored rubric used for self-grading the spike's [t8-sample-brief.md](t8-sample-brief.md) and as input to the multi-AI opinion panel.
 
 Parent: [../design.md](../design.md) · Spec: [../design/06-validation.md](../design/06-validation.md) SC#5 · [../design/07-refinements.md](../design/07-refinements.md) D2
 
@@ -47,7 +47,7 @@ Honest framing: Big-3 firms rarely publish full client market-entry decks (those
 Codex T1 (CRITICAL): self-grade is motivated-reasoning-prone. Mitigations:
 
 1. **Fill in scores BEFORE reading the brief end-to-end again** — first impression matters.
-2. **For each "3+" score, name a specific quote from [sample-brief.md](sample-brief.md) that justifies it** — no score without evidence.
+2. **For each "3+" score, name a specific quote from [t8-sample-brief.md](t8-sample-brief.md) that justifies it** — no score without evidence.
 3. **The multi-AI opinion panel grades against this same rubric independently** — divergence > 1 point on any dimension is a flag.
 
 ## Contamination guard
@@ -64,21 +64,21 @@ A high score is meaningless if the brief is paraphrased from a public consulting
 
 | Control | Layer | Where enforced |
 |---|---|---|
-| Rubric / comparator URLs not in any agent-readable file | 1 | Nextcloud Files ACL: `/agents/` vs `/founder/` — see [mcp-investigation.md](mcp-investigation.md) "Network and ACL policy" |
-| System prompts never mention the comparator brief, "McKinsey / BCG / Bain", or the 8 rubric dimensions | 1, 2, Goodhart | [system-prompts.md](system-prompts.md) "Prompt sanitization rules" |
-| Consulting-firm domain blocklist for the Researcher | 1, 2 | [mcp-investigation.md](mcp-investigation.md) "Network and ACL policy" |
-| URL fetch log for every Researcher fetch | 1, 2 detection | [researcher-urls.md](researcher-urls.md) |
+| Rubric / comparator URLs not in any agent-readable file | 1 | Nextcloud Files ACL: `/agents/` vs `/founder/` — see [t4-mcp-investigation.md](t4-mcp-investigation.md) "Network and ACL policy" |
+| System prompts never mention the comparator brief, "McKinsey / BCG / Bain", or the 8 rubric dimensions | 1, 2, Goodhart | [t5-system-prompts.md](t5-system-prompts.md) "Prompt sanitization rules" |
+| Consulting-firm domain blocklist for the Researcher | 1, 2 | [t4-mcp-investigation.md](t4-mcp-investigation.md) "Network and ACL policy" |
+| URL fetch log for every Researcher fetch | 1, 2 detection | [t5-researcher-urls.md](t5-researcher-urls.md) |
 | Verbatim 7-gram match check post-spike | 1 detection | This file — "Post-spike checks" below |
 | AI-panel "derivative check" — name a suspected source brief | 2, 3 | This file — "Panel-only checks" below |
 | Reverse-grade against a non-Big-3 anchor | 2, 3 | This file — "Panel-only checks" below |
 
 ### Post-spike checks
 
-Run these against [sample-brief.md](sample-brief.md) before any positive gate decision. Failure on any of them downgrades the gate by one tier (strong → weakly positive, weakly positive → negative).
+Run these against [t8-sample-brief.md](t8-sample-brief.md) before any positive gate decision. Failure on any of them downgrades the gate by one tier (strong → weakly positive, weakly positive → negative).
 
 **Verbatim match check (7-gram, against 5 anchor briefs):**
 
-1. Extract plain-text of [sample-brief.md](sample-brief.md) and the 5 anchor PDFs (the BCG/McKinsey/Bain URLs above).
+1. Extract plain-text of [t8-sample-brief.md](t8-sample-brief.md) and the 5 anchor PDFs (the BCG/McKinsey/Bain URLs above).
 2. Generate all 7-word sequences from each.
 3. Intersect sample-brief's 7-grams against each anchor's 7-grams.
 4. Flag any non-trivial hit (excludes common phrases — e.g., "in the next five to ten years" is uninteresting; "the four success factors for entrants are" is a hit).
@@ -88,7 +88,7 @@ Cheap implementation: a 20-line Python script with `nltk` or a shell pipeline (`
 
 **Researcher URL audit:**
 
-Open [researcher-urls.md](researcher-urls.md). For each logged fetch, verify:
+Open [t5-researcher-urls.md](t5-researcher-urls.md). For each logged fetch, verify:
 
 - Domain is not on the consulting-firm blocklist.
 - Domain is not an archive/mirror of a blocklisted domain (`web.archive.org/.../bcg.com/...`, SlideShare hosting BCG decks, etc.).

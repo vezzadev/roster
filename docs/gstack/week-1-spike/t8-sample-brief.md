@@ -1,6 +1,6 @@
 # Sample Brief (Spike Output Artifact)
 
-This file holds the market-entry brief produced by the 4-agent team during Run 2 of the Week 1 spike. It is the artifact graded against [grading-rubric.md](grading-rubric.md) and reviewed by the multi-AI opinion panel before any paid analyst engagement.
+This file holds the market-entry brief produced by the 4-agent team during Run 2 of the Week 1 spike. It is the artifact graded against [t1-grading-rubric.md](t1-grading-rubric.md) and reviewed by the multi-AI opinion panel before any paid analyst engagement.
 
 Parent: [../design.md](../design.md) · Spec: [../design/06-validation.md](../design/06-validation.md) SC#5
 
@@ -15,16 +15,16 @@ Parent: [../design.md](../design.md) · Spec: [../design/06-validation.md](../de
     3. **Not adjacent to AI/agent domain.** Avoids the recursion problem where the agents would be briefing on their own market. Lets the founder grade neutrally based on whether the analysis would convince a SaaS strategy buyer.
     4. **Real decision space.** Plausible outcomes range from "do not enter — TAM does not justify GTM cost" to "enter via local reseller partnership" to "acquire a local player." The brief has to defend its recommendation, not stamp it.
     5. **Mid-market bounding.** "Mid-market vertical-SaaS for logistics SMBs" is specific enough to constrain the brief but not so narrow it's contrived.
-- **Public comparator brief:** BCG, "Vietnam: A Global Engine of Growth" (2023) — same SEA geography frame, different target country. See [grading-rubric.md](grading-rubric.md) "Anchor" for the full comparator set.
+- **Public comparator brief:** BCG, "Vietnam: A Global Engine of Growth" (2023) — same SEA geography frame, different target country. See [t1-grading-rubric.md](t1-grading-rubric.md) "Anchor" for the full comparator set.
 
 ## Provenance
 
-- Produced by: Run _N_ — see [run-ledger.md](run-ledger.md)
+- Produced by: Run _N_ — see [t5-run-ledger.md](t5-run-ledger.md)
 - Agents: EM + Senior Analyst A + Senior Analyst B + Researcher
-- Frozen prompts: see [system-prompts.md](system-prompts.md) (hashes in run-ledger)
+- Frozen prompts: see [t5-system-prompts.md](t5-system-prompts.md) (hashes in run-ledger)
 - Date produced:
 - Total wall time:
-- Total cost: see [spike-cost.md](spike-cost.md)
+- Total cost: see [t7-spike-cost.md](t7-spike-cost.md)
 
 ## Brief
 
@@ -34,7 +34,7 @@ _(replace this section with the unedited agent output — do not clean up. The w
 
 ## Self-grade
 
-Apply [grading-rubric.md](grading-rubric.md). Record per-dimension score + the public-brief comparator note.
+Apply [t1-grading-rubric.md](t1-grading-rubric.md). Record per-dimension score + the public-brief comparator note.
 
 ## AI panel review
 

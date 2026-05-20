@@ -133,7 +133,7 @@ risks.
 - **D2 (artifact spec anchored to public consulting brief):** Spike targets a
   public McKinsey/BCG market-entry primer section structure, not a
   founder-invented rubric. Spec lives in
-  [../week-1-spike/grading-rubric.md](../week-1-spike/grading-rubric.md) before
+  [../week-1-spike/t1-grading-rubric.md](../week-1-spike/t1-grading-rubric.md) before
   the spike runs.
 - **D3 + T1 (self-grade week 1 + AI panel before paid analyst):** Founder
   self-grades against the public-brief spec in week 1. A **multi-AI opinion
@@ -153,24 +153,24 @@ risks.
   without a rigid decision tree. Codex rated the original "no tree" CRITICAL;
   lightweight bullets are the mitigation.
 - **D6 + T4-C (expanded spike output folder):** [../week-1-spike/](../week-1-spike/)
-  contains: [system-prompts.md](../week-1-spike/system-prompts.md) (final working prompts per role),
-  [what-didnt-work.md](../week-1-spike/what-didnt-work.md) (running journal of dead ends),
-  [mcp-investigation.md](../week-1-spike/mcp-investigation.md) (community servers found, API coverage, decision),
-  [sample-brief.md](../week-1-spike/sample-brief.md) (the produced artifact),
-  [run-ledger.md](../week-1-spike/run-ledger.md) (timestamped events per run + prompt hash + agent versions + outcomes),
-  [grading-rubric.md](../week-1-spike/grading-rubric.md) (the public-brief-anchored rubric used for self-grading),
-  [env-manifest.md](../week-1-spike/env-manifest.md) (Docker / Letta / Nextcloud / model versions),
-  [event-timeline.md](../week-1-spike/event-timeline.md) (agent-to-agent message timeline for debugging),
-  [spike-cost.md](../week-1-spike/spike-cost.md) (cost-tracking summary, see below).
+  contains: [t5-system-prompts.md](../week-1-spike/t5-system-prompts.md) (final working prompts per role),
+  [t5-what-didnt-work.md](../week-1-spike/t5-what-didnt-work.md) (running journal of dead ends),
+  [t4-mcp-investigation.md](../week-1-spike/t4-mcp-investigation.md) (community servers found, API coverage, decision),
+  [t8-sample-brief.md](../week-1-spike/t8-sample-brief.md) (the produced artifact),
+  [t5-run-ledger.md](../week-1-spike/t5-run-ledger.md) (timestamped events per run + prompt hash + agent versions + outcomes),
+  [t1-grading-rubric.md](../week-1-spike/t1-grading-rubric.md) (the public-brief-anchored rubric used for self-grading),
+  [t5-env-manifest.md](../week-1-spike/t5-env-manifest.md) (Docker / Letta / Nextcloud / model versions),
+  [t5-event-timeline.md](../week-1-spike/t5-event-timeline.md) (agent-to-agent message timeline for debugging),
+  [t7-spike-cost.md](../week-1-spike/t7-spike-cost.md) (cost-tracking summary, see below).
   T2's fallback bullets land in
-  [fallback-bullets.md](../week-1-spike/fallback-bullets.md) (not part of the
+  [t2-fallback-bullets.md](../week-1-spike/t2-fallback-bullets.md) (not part of the
   original 9-file set; added by the T2 pre-spike exercise). The contamination
   guard adds an 11th file:
-  [researcher-urls.md](../week-1-spike/researcher-urls.md) — append-only log
+  [t5-researcher-urls.md](../week-1-spike/t5-researcher-urls.md) — append-only log
   of every URL the Researcher fetches (audit trail for Layer 1 + Layer 2
   contamination detection; see
-  [grading-rubric.md](../week-1-spike/grading-rubric.md) "Contamination guard"
-  and [mcp-investigation.md](../week-1-spike/mcp-investigation.md) "Network
+  [t1-grading-rubric.md](../week-1-spike/t1-grading-rubric.md) "Contamination guard"
+  and [t4-mcp-investigation.md](../week-1-spike/t4-mcp-investigation.md) "Network
   and ACL policy").
 - **D7 + T3 (one forced SPOF test):** During the spike, **one `kill -9` of
   the Letta server** is run mid-flight to observe reconnect/catch-up; natural
@@ -184,7 +184,7 @@ risks.
   cadence. Full per-call instrumentation deferred to weeks 5-6.
 - **T4-D (prompt discipline):** **Prompt freeze per numbered run** + a run
   matrix committed to
-  [../week-1-spike/run-ledger.md](../week-1-spike/run-ledger.md). No
+  [../week-1-spike/t5-run-ledger.md](../week-1-spike/t5-run-ledger.md). No
   undocumented prompt thrash; one "lucky artifact" from invisible prompt
   iteration is not validation. Codex rated the absence of this discipline HIGH
   and a review blind spot.

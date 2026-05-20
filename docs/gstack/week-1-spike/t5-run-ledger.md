@@ -20,7 +20,7 @@ Codex T4-D: without a frozen prompt + recorded version per run, the experiment i
 **Purpose:** ablation diagnosability — if Run 2 fails, 2-agent control localizes failure to collaboration overhead vs prompt design vs tool friction.
 
 - Prompts frozen at hash: _EM=____ A=____
-- Env manifest snapshot: see [env-manifest.md](env-manifest.md) as of start time
+- Env manifest snapshot: see [t5-env-manifest.md](t5-env-manifest.md) as of start time
 - Started: _TBD_
 - Ended: _TBD_
 - Outcome: _success / partial / failure_
@@ -37,11 +37,11 @@ Codex T4-D: without a frozen prompt + recorded version per run, the experiment i
 **Purpose:** the gating artifact for SC#5.
 
 - Prompts frozen at hash: _EM=____ A=____ B=____ R=____
-- Env manifest snapshot: see [env-manifest.md](env-manifest.md) as of start time
+- Env manifest snapshot: see [t5-env-manifest.md](t5-env-manifest.md) as of start time
 - Started:
 - Ended:
 - Outcome: _artifact produced / partial / no artifact_
-- Forced SPOF event triggered at: _timestamp (see [event-timeline.md](event-timeline.md) and the SPOF section below)_
+- Forced SPOF event triggered at: _timestamp (see [t5-event-timeline.md](t5-event-timeline.md) and the SPOF section below)_
 - Notes:
 
 ### Event log (Run 2)

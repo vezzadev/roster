@@ -15,10 +15,10 @@ Parent: [../design.md](../design.md)
    project -- validate this BEFORE any provisioning code lands by manually running
    agents against a sample brief (Week 1). This is the gating decision for
    proceeding with weeks 2-6. Spike artifact lands in
-   [../week-1-spike/sample-brief.md](../week-1-spike/sample-brief.md). **External-validation
+   [../week-1-spike/t8-sample-brief.md](../week-1-spike/t8-sample-brief.md). **External-validation
    bar (revised by /plan-eng-review 2026-05-19):** founder self-grades the spike
    artifact against the anchored public McKinsey/BCG market-entry brief (rubric
-   in [../week-1-spike/grading-rubric.md](../week-1-spike/grading-rubric.md));
+   in [../week-1-spike/t1-grading-rubric.md](../week-1-spike/t1-grading-rubric.md));
    before any time/money is spent on a practicing analyst, a **multi-AI opinion
    panel** (Codex + Claude + others) reviews the artifact against the same spec.
    Only if the AI panel signal is positive does the project pay for a practicing
@@ -29,7 +29,7 @@ Parent: [../design.md](../design.md)
    reasoning; the AI panel substitution is the mitigation \-- see
    [07-refinements.md](07-refinements.md).
 6. Total infrastructure cost stays under $200/mo for a 4-agent team. Spike-period
-   tracking in [../week-1-spike/spike-cost.md](../week-1-spike/spike-cost.md).
+   tracking in [../week-1-spike/t7-spike-cost.md](../week-1-spike/t7-spike-cost.md).
 
 Additional acceptance criteria from /plan-ceo-review (2026-05-18):
 
@@ -68,7 +68,7 @@ Additional acceptance criteria from /plan-ceo-review (2026-05-18):
    to observe reconnect/catch-up. Full 3-scenario test (clean WS close, kill -9,
    60s sustained outage) deferred to v1.x \-- carried risk acknowledged. Forced-kill
    verdict captured in
-   [../week-1-spike/run-ledger.md](../week-1-spike/run-ledger.md) "Forced SPOF" section.
+   [../week-1-spike/t5-run-ledger.md](../week-1-spike/t5-run-ledger.md) "Forced SPOF" section.
 10. **MCP proxy sidecar viability:** Can an MCP proxy sidecar between the agent
     runtime and tool servers (Nextcloud MCP, email) hold credentials such that
     the agent never sees them directly? If so, exfiltration becomes architectural-

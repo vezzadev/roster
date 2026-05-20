@@ -6,7 +6,7 @@ Parent: [../design.md](../design.md) · Spec: [../design/07-refinements.md](../d
 
 ## Why this file matters
 
-[run-ledger.md](run-ledger.md) records what was executed. This file records what happened **between** the agents — the message-passing trace that explains why the artifact looks the way it does (or why it didn't get produced). When the brief is weak in section X, the timeline shows whether that's because no agent worked on X, two agents fought over it, or the EM never delegated it.
+[t5-run-ledger.md](t5-run-ledger.md) records what was executed. This file records what happened **between** the agents — the message-passing trace that explains why the artifact looks the way it does (or why it didn't get produced). When the brief is weak in section X, the timeline shows whether that's because no agent worked on X, two agents fought over it, or the EM never delegated it.
 
 ## Format
 
@@ -34,7 +34,7 @@ Fields:
 
 ### Forced SPOF window (Run 2)
 
-Mark the kill -9 + reconnect window inline in the table above using `system` as `from` and `restart` as event. Cross-reference [run-ledger.md](run-ledger.md) "Forced SPOF" section for the verdict.
+Mark the kill -9 + reconnect window inline in the table above using `system` as `from` and `restart` as event. Cross-reference [t5-run-ledger.md](t5-run-ledger.md) "Forced SPOF" section for the verdict.
 
 ## Capture method
 

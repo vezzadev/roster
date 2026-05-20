@@ -74,9 +74,9 @@ produce a meaningful artifact (a market-entry brief, draft strategy memo, or
 research synthesis) without human intervention? **The artifact spec is anchored to
 a public McKinsey/BCG market-entry brief** \-- agents target that section structure
 and depth, not a founder-invented rubric. See
-[../week-1-spike/grading-rubric.md](../week-1-spike/grading-rubric.md) for the
+[../week-1-spike/t1-grading-rubric.md](../week-1-spike/t1-grading-rubric.md) for the
 anchor briefs and rubric dimensions; the produced artifact lands in
-[../week-1-spike/sample-brief.md](../week-1-spike/sample-brief.md). Time-box 1 week (calendar reality: the
+[../week-1-spike/t8-sample-brief.md](../week-1-spike/t8-sample-brief.md). Time-box 1 week (calendar reality: the
 MCP MVP work below is likely a 3-day from-scratch build, so plan for 1.5-2 weeks
 realistic). **This is the gating decision.** In parallel: investigate existing
 Nextcloud MCP servers; the investigation must answer **API coverage (Talk +
@@ -84,25 +84,25 @@ Files operations needed) and room-management fit (one #team room + per-pair DMs
 require specific MCP capabilities)**, not just existence \-- if no community
 server covers the needed ops, ~3 days to build a minimal Talk+Files MCP MVP that
 unblocks the spike. Investigation results + decision live in
-[../week-1-spike/mcp-investigation.md](../week-1-spike/mcp-investigation.md). Q7 (Nextcloud OIDC) and Q8 (Migadu OAUTH2 SASL) are deferred
+[../week-1-spike/t4-mcp-investigation.md](../week-1-spike/t4-mcp-investigation.md). Q7 (Nextcloud OIDC) and Q8 (Migadu OAUTH2 SASL) are deferred
 to week 1.5 \-- they affect takeover UX, not spike validity. Q9 (Letta SPOF):
 log natural disconnects during the spike + run **one forced `kill -9` of the
 Letta server** mid-spike to observe reconnect/catch-up behavior (full 3-scenario
 test deferred to v1.x); kill verdict lands in
-[../week-1-spike/run-ledger.md](../week-1-spike/run-ledger.md) "Forced SPOF"
+[../week-1-spike/t5-run-ledger.md](../week-1-spike/t5-run-ledger.md) "Forced SPOF"
 section. Cost tracking: **hourly Anthropic usage exports with
 mid-week and end-week trendline checks** \-- topline signal that SC#6 ($200/mo)
 is on track; full per-call instrumentation deferred to weeks 5-6. Daily snapshots
-+ trendlines live in [../week-1-spike/spike-cost.md](../week-1-spike/spike-cost.md). Outputs of
++ trendlines live in [../week-1-spike/t7-spike-cost.md](../week-1-spike/t7-spike-cost.md). Outputs of
 Week 1 feed Week 2's provisioner design (what users/passwords/rooms does the
 agent setup actually need?). All spike outputs live in **[`docs/gstack/week-1-spike/`](../week-1-spike/)**
 under named files (see [07-refinements.md](07-refinements.md) D6 + T4-C for the
 full list with per-file purposes). Prompt freeze per numbered run + run matrix
-in [../week-1-spike/run-ledger.md](../week-1-spike/run-ledger.md) \-- no
+in [../week-1-spike/t5-run-ledger.md](../week-1-spike/t5-run-ledger.md) \-- no
 undocumented prompt thrash. Before the spike: 30-min exercise to write 3-4
 bullet alternatives for likely failure modes (Letta unfit, agents don't
 coordinate, output unusable) so "pivot or stop" has pre-committed exits. Bullets
-captured in [../week-1-spike/fallback-bullets.md](../week-1-spike/fallback-bullets.md).
+captured in [../week-1-spike/t2-fallback-bullets.md](../week-1-spike/t2-fallback-bullets.md).
 
 **Week 2:** Module rename (`go-project` -> `roster`), Docker Compose generator,
 Nextcloud provisioner (create users, app passwords, Talk rooms). Encode the manual
