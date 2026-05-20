@@ -1,7 +1,7 @@
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo dev)
 LDFLAGS := -ldflags "-X main.version=$(VERSION)"
 
-.PHONY: dev build run fmt lint vet test test-coverage test-all tools docker clean
+.PHONY: dev build run fmt lint vet test test-coverage test-all tools docker clean check-links
 
 dev:
 	./scripts/dev.sh
@@ -31,7 +31,14 @@ test-coverage:
 	@go tool cover -func=coverage.out
 	@go tool cover -html=coverage.out -o coverage.html
 
-test-all: lint vet test-coverage
+test-all: lint vet test-coverage check-links
+
+check-links:
+	@command -v lychee >/dev/null 2>&1 || { \
+		echo "lychee not installed. Install: cargo install lychee  (or)  brew install lychee"; \
+		exit 1; \
+	}
+	lychee --config lychee.toml --no-progress "**/*.md"
 
 docker:
 	docker build --build-arg VERSION=$(VERSION) -t myapp:$(VERSION) .
