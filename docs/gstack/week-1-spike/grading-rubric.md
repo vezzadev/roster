@@ -4,6 +4,21 @@ Public-brief-anchored rubric used for self-grading the spike's [sample-brief.md]
 
 Parent: [../design.md](../design.md) · Spec: [../design/06-validation.md](../design/06-validation.md) SC#5 · [../design/07-refinements.md](../design/07-refinements.md) D2
 
+## Dimensions
+
+Scoring scale: **1 (clearly worse than comparator) — 3 (rough parity) — 5 (clearly better)**. Sub-3 on any single dimension is a fail signal for that dimension regardless of average. Dimensions are drafted to map onto the structural pattern observed in the comparator briefs (see [Anchor](#anchor) below).
+
+| # | Dimension | What "3" looks like | What "5" looks like | Sub-3 means |
+|---|-----------|---------------------|---------------------|-------------|
+| 1 | Section structure | Same headline sections as comparator | Same + meaningful sub-structure | Brief is incoherent or misordered |
+| 2 | Market sizing & methodology | TAM/SAM/SOM shown with stated method | + sensitivity analysis | Sizing assertion without method |
+| 3 | Competitive landscape | Named competitors with positioning | + 2x2 / strategic groups | Vague "competitors include…" |
+| 4 | Customer segmentation | Segments named + sized | + use cases per segment | Single undifferentiated market |
+| 5 | Entry mode analysis | 2-3 modes evaluated with trade-offs | + recommendation with reasoning | Single mode, no alternatives considered |
+| 6 | Risks + mitigations | Named risks with mitigations | + ranking by likelihood × impact | Risks listed without mitigations |
+| 7 | Recommendation clarity | Clear go / no-go / conditional | + first 90-day plan | Wishy-washy "depends" without conditions |
+| 8 | Citation discipline | Sources cited for non-trivial claims | + primary sources where possible | Unsourced assertions |
+
 ## Anchor
 
 The rubric is anchored to **publicly available Big-3 market-entry briefs**, not a founder-invented spec. Codex T1: a founder-invented rubric is a fake gate.
@@ -25,22 +40,7 @@ Honest framing: Big-3 firms rarely publish full client market-entry decks (those
 - Bain, "Are You Ahead of the Curve in Emerging Markets?" (~2012) — https://media.bain.com/Images/INDUSTRY_BRIEF_Ahead_of_curve_in_emerging_markets.pdf — bifurcated tracks (enter-vs-defend) pattern.
 - BCG, "Changing Your Orbit" India (Jun 2014) — https://web-assets.bcg.com/img-src/Changing-Your-Orbit-Jun-2014-India_tcm9-28793.pdf — explicit 3-step entry framework.
 
-**Structural pattern observed across all five:** context/sizing → competitive landscape → 3-6 success-factor framework → entry-mode or strategic-option decision → recommendation, often bifurcated (enter-vs-defend or aggressive-vs-cautious). The 8 rubric dimensions below were drafted to map onto this pattern.
-
-## Dimensions
-
-Scoring scale: **1 (clearly worse than comparator) — 3 (rough parity) — 5 (clearly better)**. Sub-3 on any single dimension is a fail signal for that dimension regardless of average.
-
-| # | Dimension | What "3" looks like | What "5" looks like | Sub-3 means |
-|---|-----------|---------------------|---------------------|-------------|
-| 1 | Section structure | Same headline sections as comparator | Same + meaningful sub-structure | Brief is incoherent or misordered |
-| 2 | Market sizing & methodology | TAM/SAM/SOM shown with stated method | + sensitivity analysis | Sizing assertion without method |
-| 3 | Competitive landscape | Named competitors with positioning | + 2x2 / strategic groups | Vague "competitors include…" |
-| 4 | Customer segmentation | Segments named + sized | + use cases per segment | Single undifferentiated market |
-| 5 | Entry mode analysis | 2-3 modes evaluated with trade-offs | + recommendation with reasoning | Single mode, no alternatives considered |
-| 6 | Risks + mitigations | Named risks with mitigations | + ranking by likelihood × impact | Risks listed without mitigations |
-| 7 | Recommendation clarity | Clear go / no-go / conditional | + first 90-day plan | Wishy-washy "depends" without conditions |
-| 8 | Citation discipline | Sources cited for non-trivial claims | + primary sources where possible | Unsourced assertions |
+**Structural pattern observed across all five:** context/sizing → competitive landscape → 3-6 success-factor framework → entry-mode or strategic-option decision → recommendation, often bifurcated (enter-vs-defend or aggressive-vs-cautious). The 8 rubric dimensions above were drafted to map onto this pattern.
 
 ## Honesty guard
 
