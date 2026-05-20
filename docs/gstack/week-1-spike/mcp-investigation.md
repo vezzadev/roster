@@ -46,7 +46,7 @@ Survey conducted 2026-05-19. Re-verify before committing — the leading repo (c
 - Coverage: 110+ tools across 10 Nextcloud apps. **Talk (spreed): 6 tools** — list conversations, read/post messages, mark as read, list participants. **Files (WebDAV): 12 tools** — full CRUD + OCR/document extraction.
 - Room-management fit: **partial — supports messaging in existing rooms but no room-create/delete operation.** Rooms must be created out-of-band (e.g., by the provisioner during `roster up`, or manually via Nextcloud admin).
 - Deployment: Docker image, Helm chart, multi-user OAuth via Login Flow v2, app-password auth. Managed hosted variant (Astrolabe Cloud) also available.
-- Notes: AGPL-3.0 is fine for Roster since it runs as a separate container — the license does not infect the orchestration code that talks to it over MCP. Confirm AGPL compatibility with downstream users of Roster (most use cases are internal teams, no redistribution).
+- Notes: AGPL-3.0 is a non-issue — Roster is itself AGPL-3.0 (see `LICENSE` at repo root), so license-compatibility concerns evaporate.
 
 ### Frisch12/nextcloud-mcp-server  (Go, no license) — **blocker: unlicensed**
 
@@ -98,7 +98,6 @@ Rationale:
 
 Carryforward risks:
 - If during the spike cbcoutinho's Talk coverage proves insufficient for an unanticipated operation, fall back to: (a) PR upstream (cheaper than a parallel server), or (b) build a thin MCP MVP for just the missing op.
-- AGPL: confirm Roster's downstream distribution model accommodates it. For internal-team usage (the v1 target), this is a non-issue.
 
 ## Setup notes (for Week 1 spike)
 
