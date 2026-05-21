@@ -90,9 +90,11 @@ log natural disconnects during the spike + run **one forced `kill -9` of the
 Letta server** mid-spike to observe reconnect/catch-up behavior (full 3-scenario
 test deferred to v1.x); kill verdict lands in
 [../week-1-spike/t5-run-ledger.md](../week-1-spike/t5-run-ledger.md) "Forced SPOF"
-section. Cost tracking: **hourly Anthropic usage exports with
+section. Cost tracking: **hourly OpenRouter usage exports with
 mid-week and end-week trendline checks** \-- topline signal that SC#6 ($200/mo)
-is on track; full per-call instrumentation deferred to weeks 5-6. Daily snapshots
+is on track; full per-call instrumentation deferred to weeks 5-6. OpenRouter
+carries a per-model markup over direct Anthropic; SC#6 may need to be
+revisited once the first trendline lands. Daily snapshots
 + trendlines live in [../week-1-spike/t7-spike-cost.md](../week-1-spike/t7-spike-cost.md). Outputs of
 Week 1 feed Week 2's provisioner design (what users/passwords/rooms does the
 agent setup actually need?). All spike outputs live in **[`docs/gstack/week-1-spike/`](../week-1-spike/)**
@@ -129,11 +131,12 @@ Infrastructure:
   Migadu (email)                           $19/mo
   Compute (Nextcloud + Letta, VPS/local)   $0-20/mo (local dev is free)
 
-Claude API (4 agents, moderate autonomy):
-  Agents poll every 30s but only call Claude when there's work to do.
+Claude models via OpenRouter (4 agents, moderate autonomy):
+  Agents poll every 30s but only call the model when there's work to do.
   Estimate: ~50-100 meaningful interactions/agent/day (not 30s polling).
   Average interaction: ~2K input tokens + ~500 output tokens.
-  Sonnet: ~$0.003/input 1K + ~$0.015/output 1K = ~$0.0135/interaction.
+  Sonnet (anthropic/claude-sonnet-4.6): ~$0.003/input 1K + ~$0.015/output 1K
+    = ~$0.0135/interaction at Anthropic-direct list price.
   Per agent per day: ~$0.68-1.35
   Per agent per month: ~$20-40
   4 agents: ~$80-160/mo
@@ -141,8 +144,13 @@ Claude API (4 agents, moderate autonomy):
   One Opus agent (Engagement Manager, for synthesis): ~3x Sonnet cost = ~$60-120/mo
   Revised with Opus: $100-200/mo for API alone
 
-Total: $119-239/mo (within $200/mo target for moderate usage,
-  may exceed with heavy Opus usage)
+  OpenRouter markup: numbers above are Anthropic-direct list price. OpenRouter
+  passes through at a per-model markup; pin actual OpenRouter rates per the
+  catalog at run start (see t7-spike-cost.md). Re-baseline SC#6 ($200/mo) once
+  the first OpenRouter trendline lands — likely a small upward push.
+
+Total: $119-239/mo at Anthropic-direct rates (within $200/mo target for moderate
+  usage, may exceed with heavy Opus usage). Add OpenRouter markup on top.
 ```
 
 ## Letta Channels Contingency
@@ -166,5 +174,5 @@ management only.
 - Letta (open source, actively maintained, channels in beta)
 - Nextcloud (open source, mature, Helm chart available)
 - Migadu ($19/mo, Admin API for programmatic mailbox management)
-- Claude API (Anthropic, for agent LLM calls)
+- OpenRouter (model inference; routes to Anthropic Claude models in v1, can route to alternative providers as a fallback)
 - Docker + Docker Compose (local development)

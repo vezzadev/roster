@@ -149,10 +149,11 @@ Every agent-side codepath that calls an external service has a defined error res
 
 | Codepath | Failure | Response |
 |---|---|---|
-| Anthropic API call | 429 rate limit | Letta retries with exponential backoff; on final failure, agent posts to #team: "Rate-limited, pausing 5 minutes," logs to per-agent error log in roster state dir |
-| Anthropic API call | 5xx / timeout | Same backoff + Talk surface as above |
-| Anthropic response | Malformed JSON in tool call | Agent posts: "Received malformed tool call response, retrying once" + logs |
-| Anthropic response | Refusal ("I cannot...") | Agent posts: "Model refused to act on this task — needs human input"; pauses on this work item |
+| OpenRouter API call | 429 rate limit | Letta retries with exponential backoff; on final failure, agent posts to #team: "Rate-limited, pausing 5 minutes," logs to per-agent error log in roster state dir |
+| OpenRouter API call | 5xx / timeout | Same backoff + Talk surface as above |
+| Model response (via OpenRouter) | Malformed JSON in tool call | Agent posts: "Received malformed tool call response, retrying once" + logs |
+| Model response (via OpenRouter) | Refusal ("I cannot...") | Agent posts: "Model refused to act on this task — needs human input"; pauses on this work item |
+| OpenRouter | Upstream Anthropic outage (502/503 surfaced by OR) | Treat as 5xx/timeout above; if persistent past 10 min, optionally route to a fallback OpenRouter model — operator decision recorded in run-ledger |
 | MCP tool call | Timeout | Retry once with backoff; if persistent, post to #team and skip this tool call |
 | MCP tool call (Files write) | Server 500 | Re-read file to detect partial write; post to #team if state ambiguous |
 | Letta server WebSocket | Disconnect | Local headless container auto-reconnects (Letta-side concern); Roster CLI surfaces "agent X temporarily unreachable" via `roster status` |

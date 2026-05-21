@@ -29,4 +29,6 @@ logs/
 # Claude Code
 .claude/*
 !.claude/settings.json
-pat.local
+
+# Local-only secrets / credentials (raw-value files, never commit)
+*.local
