@@ -4,11 +4,34 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   gate:
     name: Awaiting human review
     runs-on: ubuntu-slim
-    environment: pr-review-gate
     steps:
-      - run: echo "Human approver acknowledged this PR's diff."
+      - name: Verify approver identity
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          STATE: ${{ github.event.review.state }}
+          APPROVER: ${{ github.event.review.user.login }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "::error::No approving review yet. Gate closed until an allowed reviewer approves."
+            exit 1
+          fi
+          if [ "$STATE" != "approved" ]; then
+            echo "::error::Review state is '$STATE', not 'approved'. Gate remains closed."
+            exit 1
+          fi
+          case "$APPROVER" in
+            pedropaulovc|pedrovezzadev)
+              echo "Approved by allowed reviewer: $APPROVER"
+              ;;
+            *)
+              echo "::error::Approver '$APPROVER' is not in the allowed list (pedropaulovc, pedrovezzadev)."
+              exit 1
+              ;;
+          esac
