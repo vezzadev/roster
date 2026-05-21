@@ -16,7 +16,7 @@ The spike validates **Success Criterion #5** (see [../design/06-validation.md](.
 | T2 | P1 | 30min / 5min | [t2-fallback-bullets.md](t2-fallback-bullets.md) | ✅ done — 3 failure modes × 4 alternatives + terminal exits |
 | T3 | P1 | 2h / 10min | (this folder) | ✅ done — 11 files scaffolded |
 | T4 | P1 | 3d / 1d | [t4-mcp-investigation.md](t4-mcp-investigation.md) | ✅ done — adopt cbcoutinho/nextcloud-mcp-server; MVP build skipped |
-| T5 | P1 | 2d / 4h | [t5-run-ledger.md](t5-run-ledger.md), [t5-system-prompts.md](t5-system-prompts.md), [t5-env-manifest.md](t5-env-manifest.md), [t5-event-timeline.md](t5-event-timeline.md), [t5-what-didnt-work.md](t5-what-didnt-work.md), [t5-researcher-urls.md](t5-researcher-urls.md) | ⏳ not started — awaits spike kickoff |
+| T5 | P1 | 2d / 4h | [t5-run-ledger.md](t5-run-ledger.md), [t5-system-prompts.md](t5-system-prompts.md), [t5-env-manifest.md](t5-env-manifest.md), [t5-event-timeline.md](t5-event-timeline.md), [t5-what-didnt-work.md](t5-what-didnt-work.md), [t5-researcher-urls.md](t5-researcher-urls.md) | 🟡 prompts frozen 2026-05-21 (4 roles, 0 banned-token hits, hashes recorded); runs await Nextcloud + Letta + Squid setup |
 | T6 | P2 | 15min / 2min | [t5-run-ledger.md](t5-run-ledger.md) "Forced SPOF" section | ⏳ not started — awaits Run 2 mid-flight |
 | T7 | P2 | 1h / 15min | [t7-spike-cost.md](t7-spike-cost.md) | ⏳ not started — capture method documented; no snapshots yet |
 | T8 | P1 | 2h / 30min | [t8-sample-brief.md](t8-sample-brief.md) + AI-panel review file (to be created at T8 time) | ⏳ not started — awaits Run 2 artifact |
