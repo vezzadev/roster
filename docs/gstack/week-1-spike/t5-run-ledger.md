@@ -17,11 +17,13 @@ Codex T4-D: without a frozen prompt + recorded version per run, the experiment i
 
 ## Run 1 — 2-agent smoke (1h cap)
 
-**Purpose:** ablation diagnosability — if Run 2 fails, 2-agent control localizes failure to collaboration overhead vs prompt design vs tool friction.
+**Purpose:** ablation diagnosability — if Run 2 fails, 2-agent control localizes failure to collaboration overhead vs prompt design vs tool friction. **Run 1's brief is diagnostic, not rubric-gradable** — the rubric is calibrated for the 4-agent main run.
 
-- Prompts frozen at hash: _EM=____ A=____
-- Env manifest snapshot: see [t5-env-manifest.md](t5-env-manifest.md) as of start time
-- Started: _TBD_
+- Prompts frozen at hash: EM=`f41b83ba42cf5b5d62a4f93ef70f27e5e1760cdfa81be5e86f647db1a4a6a04a` A=`4f715306639f519af745e1df97455a5b99c9e99266069b60c5b01fdf8b01f447`
+- Contamination grep: 0 hits across 25 banned tokens for both prompts (verified pre-boot by `spike-compose/wire-run-1.py`)
+- Letta agent IDs: EM=`agent-51e9d3e6-99ee-4a76-9fd0-7d13638df6f6`, Analyst A=`agent-5b04211a-d5f8-4574-9937-e20c2206a293`
+- Env manifest snapshot: see [t5-env-manifest.md](t5-env-manifest.md) "Run 1 — 2026-05-21"
+- Started: _TBD — kicked off when first user message posts to EM agent_
 - Ended: _TBD_
 - Outcome: _success / partial / failure_
 - Notes:
@@ -30,7 +32,8 @@ Codex T4-D: without a frozen prompt + recorded version per run, the experiment i
 
 | Timestamp | Actor | Event |
 |-----------|-------|-------|
-| _empty_ | | |
+| 2026-05-21 22:XX UTC | operator | Pre-boot gates: prompt hashes match (EM + Analyst A), banned-token grep 0 hits, both Letta agents created with 15 MCP tools each |
+| _TBD_ | operator | Kickoff message posted to EM agent |
 
 ## Run 2 — 4-agent main spike
 
