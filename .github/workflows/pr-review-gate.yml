@@ -17,21 +17,30 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           STATE: ${{ github.event.review.state }}
           APPROVER: ${{ github.event.review.user.login }}
+          BODY: ${{ github.event.review.body }}
         run: |
           if [ "$EVENT_NAME" = "pull_request" ]; then
-            echo "::error::No approving review yet. Gate closed until an allowed reviewer approves."
+            echo "::error::No approving review yet. Gate closed until an allowed reviewer approves or comments LGTM."
             exit 1
           fi
-          if [ "$STATE" != "approved" ]; then
-            echo "::error::Review state is '$STATE', not 'approved'. Gate remains closed."
-            exit 1
-          fi
+
           case "$APPROVER" in
-            pedropaulovc|pedrovezzadev)
-              echo "Approved by allowed reviewer: $APPROVER"
-              ;;
+            pedropaulovc|pedrovezzadev) ;;
             *)
-              echo "::error::Approver '$APPROVER' is not in the allowed list (pedropaulovc, pedrovezzadev)."
+              echo "::error::Reviewer '$APPROVER' is not in the allowed list (pedropaulovc, pedrovezzadev)."
               exit 1
               ;;
           esac
+
+          if [ "$STATE" = "approved" ]; then
+            echo "Approved by allowed reviewer: $APPROVER"
+            exit 0
+          fi
+
+          if [ "$STATE" = "commented" ] && printf '%s' "$BODY" | grep -qE '(^|[^A-Za-z0-9])LGTM([^A-Za-z0-9]|$)'; then
+            echo "LGTM detected in review comment from allowed reviewer: $APPROVER"
+            exit 0
+          fi
+
+          echo "::error::Review from '$APPROVER' is state '$STATE' and does not contain LGTM. Gate remains closed."
+          exit 1
