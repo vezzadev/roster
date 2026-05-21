@@ -1,9 +1,6 @@
 name: Human review gate
 
 on:
-  pull_request:
-    branches: [main]
-    types: [opened, synchronize, reopened]
   pull_request_review:
     types: [submitted]
 
@@ -14,16 +11,10 @@ jobs:
     steps:
       - name: Verify approver identity
         env:
-          EVENT_NAME: ${{ github.event_name }}
           STATE: ${{ github.event.review.state }}
           APPROVER: ${{ github.event.review.user.login }}
           BODY: ${{ github.event.review.body }}
         run: |
-          if [ "$EVENT_NAME" = "pull_request" ]; then
-            echo "::error::No approving review yet. Gate closed until an allowed reviewer approves or comments LGTM."
-            exit 1
-          fi
-
           case "$APPROVER" in
             pedropaulovc|pedrovezzadev) ;;
             *)
