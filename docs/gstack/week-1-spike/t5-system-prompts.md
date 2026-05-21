@@ -60,7 +60,7 @@ Freeze-time hashes (computed 2026-05-21):
 
 ## Engagement Manager (EM)
 
-Model: claude-opus-4-7 (per design Cost Model — synthesis role)
+Model: Letta handle `openrouter/anthropic/claude-opus-4.7` (per design Cost Model — synthesis role; OpenRouter native ID is `anthropic/claude-opus-4.7`. Smoke-tested 2026-05-21: handle resolves against the live OpenRouter key.)
 Frozen for: Run 1 (2-agent smoke) + Run 2 (4-agent main)
 Frozen on: 2026-05-21
 Hash: `sha256: f41b83ba42cf5b5d62a4f93ef70f27e5e1760cdfa81be5e86f647db1a4a6a04a`
@@ -98,7 +98,7 @@ If your team is smaller than four (e.g., the Researcher is not present), adapt �
 
 ## Senior Analyst A
 
-Model: claude-sonnet-4-6 (per design Cost Model)
+Model: Letta handle `openrouter/anthropic/claude-sonnet-4.6` (per design Cost Model; OpenRouter native ID is `anthropic/claude-sonnet-4.6`. Smoke-tested 2026-05-21.)
 Frozen for: Run 1 (2-agent smoke) + Run 2 (4-agent main)
 Frozen on: 2026-05-21
 Hash: `sha256: 4f715306639f519af745e1df97455a5b99c9e99266069b60c5b01fdf8b01f447`
@@ -135,7 +135,7 @@ Workflow:
 
 ## Senior Analyst B
 
-Model: claude-sonnet-4-6 (per design Cost Model)
+Model: Letta handle `openrouter/anthropic/claude-sonnet-4.6` (per design Cost Model; OpenRouter native ID is `anthropic/claude-sonnet-4.6`. Smoke-tested 2026-05-21.)
 Frozen for: Run 2 (4-agent main) only — not present in Run 1
 Frozen on: 2026-05-21
 Hash: `sha256: 318161ba9304020282608c4507760803dac43c4072421875f025498948710611`
@@ -172,7 +172,7 @@ Workflow:
 
 ## Researcher
 
-Model: claude-sonnet-4-6 (per design Cost Model)
+Model: Letta handle `openrouter/anthropic/claude-sonnet-4.6` (per design Cost Model; OpenRouter native ID is `anthropic/claude-sonnet-4.6`. Smoke-tested 2026-05-21.)
 Frozen for: Run 2 (4-agent main) only — not present in Run 1
 Frozen on: 2026-05-21
 Hash: `sha256: 149dd84f02500792cb4d85882e57199cf02b6baad32d5d193e011d71f24bf4cb`

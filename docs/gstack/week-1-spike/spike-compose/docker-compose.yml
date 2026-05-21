@@ -1,0 +1,145 @@
+# Week 1 validation spike runtime.
+#
+# Stand up outside the repo — copy this directory to e.g. ~/spike-runtime/
+# before `docker compose up`. Host bind-mounts and Docker volumes hold
+# Nextcloud's /agents/ and /founder/ folders that the contamination guard
+# partitions; keeping the runtime working tree separate from the repo
+# avoids accidental commit of run-time data.
+#
+# Bring-up sequence (manual per Week 1 "no CLI" spec):
+#   1. cp .env.example .env  &&  chmod 600 .env  &&  edit .env
+#   2. docker compose up -d nc-db nc-redis nextcloud
+#      → wait ~30s for Nextcloud first-run init
+#   3. docker compose exec --user www-data nextcloud php occ app:install spreed
+#   4. In the Nextcloud admin UI (http://localhost:8080), create users:
+#        em, analyst-a                       (Run 1 + Run 2)
+#        analyst-b, researcher               (Run 2 only)
+#      Generate one app-password per user.
+#   5. Create folders /agents/ and /founder/. Set ACLs per
+#      ../t4-mcp-investigation.md "Network and ACL policy":
+#        /agents/   read+write to all four agent users
+#        /founder/  read+write to admin/founder only; invisible to agents
+#      Verify by logging in as each agent user — /founder/ must not appear.
+#   6. Create Talk rooms per ../t5-system-prompts.md:
+#        #team    (all present agents)
+#        EM-A     (em + analyst-a)                            (Run 1 + Run 2)
+#        EM-B, EM-Researcher, A-B, A-Researcher, B-Researcher (Run 2 only)
+#   7. docker compose up -d letta nextcloud-mcp
+#   8. Wire each Letta agent to its frozen prompt from
+#      ../t5-system-prompts.md. Re-verify SHA-256 hashes per the Hash
+#      protocol in that file. Re-run the banned-token grep (0 hits).
+#      Both gates → record in ../t5-run-ledger.md "Prompts frozen at hash".
+#   9. Capture container digests into ../t5-env-manifest.md Run N row:
+#        docker compose images
+#   10. Boot agents → Run 1 (1h hard cap). For Run 2: uncomment the
+#       squid service below, write ./squid/squid.conf + ./squid/blocklist.txt,
+#       run the four `curl -x` verification checks from t4, then boot.
+
+services:
+  nc-db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NC_DB_PASSWORD:?set NC_DB_PASSWORD in .env}
+    volumes:
+      - nc_db_data:/var/lib/postgresql/data
+    networks: [spike]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  nc-redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    networks: [spike]
+
+  nextcloud:
+    image: nextcloud:30
+    restart: unless-stopped
+    depends_on:
+      nc-db:
+        condition: service_healthy
+      nc-redis:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8080:80"   # bind localhost only; admin UI is not for the internet
+    environment:
+      POSTGRES_HOST: nc-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NC_DB_PASSWORD:?set NC_DB_PASSWORD in .env}
+      REDIS_HOST: nc-redis
+      NEXTCLOUD_ADMIN_USER: ${NC_ADMIN_USER:-admin}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NC_ADMIN_PASSWORD:?set NC_ADMIN_PASSWORD in .env}
+      NEXTCLOUD_TRUSTED_DOMAINS: localhost
+    volumes:
+      - nc_data:/var/www/html
+    networks: [spike]
+
+  letta:
+    # Verify tag against https://docs.letta.com/ at bring-up; pin a digest
+    # in ../t5-env-manifest.md before declaring the run frozen.
+    image: letta/letta:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8283:8283"
+    environment:
+      # OPENROUTER_API_KEY and LETTA_SERVER_PASSWORD are sourced from the
+      # gitignored ./openrouter.local and ./letta.local files by
+      # ./bring-up.sh (see that script and ./README.md). They never live
+      # in .env or in committed files.
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?run ./bring-up.sh — sources ./openrouter.local}
+      SECURE: "true"
+      LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
+    volumes:
+      - letta_data:/root/.letta
+    networks: [spike]
+
+  nextcloud-mcp:
+    # cbcoutinho/nextcloud-mcp-server (AGPL-3.0) — adopted per
+    # ../t4-mcp-investigation.md "Decision". Verify the canonical
+    # image name/tag at https://github.com/cbcoutinho/nextcloud-mcp-server
+    # before first boot; pin the digest in ../t5-env-manifest.md.
+    image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
+    restart: unless-stopped
+    depends_on: [nextcloud]
+    environment:
+      NEXTCLOUD_BASE_URL: http://nextcloud
+      # Per-agent app passwords are wired into Letta's MCP client config,
+      # not into this server. The server accepts (username, app_password)
+      # on each call from Letta.
+    networks: [spike]
+
+  # ─── Run 2 only — uncomment + verify before booting Run 2 ────────────────
+  #
+  # squid:
+  #   image: ubuntu/squid:latest
+  #   restart: unless-stopped
+  #   volumes:
+  #     - ./squid/squid.conf:/etc/squid/squid.conf:ro
+  #     - ./squid/blocklist.txt:/etc/squid/blocklist.txt:ro
+  #   networks: [spike]
+  #
+  # Per ../t4-mcp-investigation.md "Network and ACL policy":
+  #   - ./squid/blocklist.txt holds one `dstdomain` entry per line for the
+  #     consulting-firm domains in t4 + their archive/mirror paths.
+  #   - Set HTTP_PROXY=http://squid:3128 on the Researcher's URL-fetch
+  #     surface (likely a sidecar to the Letta runtime, or the Researcher
+  #     agent's tool definition if its MCP web-fetch supports proxy env).
+  #   - Run the four `curl -x` verification checks from t4
+  #     "Verification checklist (before Run 1)" — copy results into the
+  #     ../t5-run-ledger.md "Run 2 setup" notes.
+
+networks:
+  spike:
+    driver: bridge
+
+volumes:
+  nc_data:
+  nc_db_data:
+  letta_data:

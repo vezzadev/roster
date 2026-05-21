@@ -22,7 +22,7 @@ If none of the three failure modes matches the situation, that itself is a signa
 
 Alternatives, lightest first:
 
-- **Drop to raw Anthropic API + thin orchestration script.** Skip Letta entirely; coordinate the four agents via a single Python script that maintains conversation state in-process. Loses persistence between runs but removes the Letta variable. Cost: 1 day. Test: can a 4-agent run complete with no runtime crashes?
+- **Drop to raw OpenRouter API + thin orchestration script.** Skip Letta entirely; coordinate the four agents via a single Python script that maintains conversation state in-process and calls OpenRouter directly (`anthropic/claude-*` model IDs). Loses persistence between runs but removes the Letta variable. Cost: 1 day. Test: can a 4-agent run complete with no runtime crashes? (Falling further to direct Anthropic — bypassing OpenRouter too — is the next step if OpenRouter itself is suspected; record that choice in the fallback decision log.)
 - **Try Letta with single-process embedded mode (no headless container split).** Eliminate the WebSocket layer that's the suspected SPOF. Cost: half a day. Test: same as above.
 - **Swap to a different agent runtime (Claude Agent SDK direct, or AutoGen).** Bigger pivot, but if Letta is structurally unfit the whole Premise 3 needs revisiting. Cost: 2-3 days for re-spike. Test: does the failure reproduce on a different substrate? If no, Letta is the issue; if yes, it's elsewhere.
 - **Stop and re-baseline.** If three runtimes fail similarly, the issue is in the design (the agent design, the tools surface, or the prompts), not the runtime. Open `t5-what-didnt-work.md`, write up the cross-runtime evidence, and call the gate.

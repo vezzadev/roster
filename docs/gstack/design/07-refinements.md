@@ -16,7 +16,8 @@ The local "Letta" is a headless container running `letta-code + channels` that p
 home to a Letta server via WebSocket. The server exposes the WS endpoint and owns
 agent memory + lifecycle state. Roster CLI talks to the Letta server REST API to
 create/manage agents; the local headless container runs the agent execution loop and
-makes outbound MCP/Anthropic calls. This changes the SPOF picture (server dependency
+makes outbound MCP/OpenRouter calls (v1 routes inference through OpenRouter; direct
+Anthropic API is no longer the canonical path). This changes the SPOF picture (server dependency
 is real) and clarifies catch-up direction (CLI → Letta server, then headless container
 syncs).
 
@@ -177,11 +178,13 @@ risks.
   disconnects logged reactively. Full 3-scenario empirical test (clean WS
   close, kill -9, 60s sustained outage) deferred to v1.x. Codex rated this
   HIGH; one-forced-kill is the mitigation.
-- **D8 + T3 (hourly usage exports + trendlines):** Anthropic API usage
+- **D8 + T3 (hourly usage exports + trendlines):** OpenRouter usage
   exports captured **hourly** during the spike, with **mid-week and
   end-week trendline checks** against SC#6 ($200/mo target). No in-spike
-  per-call instrumentation; signal via Anthropic usage endpoint at higher
-  cadence. Full per-call instrumentation deferred to weeks 5-6.
+  per-call instrumentation; signal via OpenRouter's usage endpoint at higher
+  cadence. Full per-call instrumentation deferred to weeks 5-6. OpenRouter
+  carries a per-model markup over direct Anthropic; revisit the $200/mo
+  target once the first trendline lands.
 - **T4-D (prompt discipline):** **Prompt freeze per numbered run** + a run
   matrix committed to
   [../week-1-spike/t5-run-ledger.md](../week-1-spike/t5-run-ledger.md). No

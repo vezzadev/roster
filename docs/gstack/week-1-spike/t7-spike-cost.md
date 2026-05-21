@@ -6,11 +6,13 @@ Parent: [../design.md](../design.md) · Spec: [../design/05-implementation.md](.
 
 ## Why this file matters
 
-Codex D8 was rated HIGH: a deferred cost story leaves SC#6 unanchored until weeks 5-6, by which point sunk-cost momentum has accrued. Mitigation: **hourly Anthropic API usage exports** + **mid-week and end-week trendline checks** against the $200/mo budget. This is not full per-call instrumentation (that's deferred to weeks 5-6) — it is topline signal only.
+Codex D8 was rated HIGH: a deferred cost story leaves SC#6 unanchored until weeks 5-6, by which point sunk-cost momentum has accrued. Mitigation: **hourly OpenRouter usage exports** + **mid-week and end-week trendline checks** against the $200/mo budget. This is not full per-call instrumentation (that's deferred to weeks 5-6) — it is topline signal only.
+
+OpenRouter is the inference routing layer in v1 (Anthropic models routed through OpenRouter, key in `spike-compose/openrouter.local`). OpenRouter adds a per-model markup over Anthropic-direct list prices, so the SC#6 ($200/mo) math in [../design/05-implementation.md](../design/05-implementation.md) "Cost Model" — which was computed at Anthropic-direct rates — needs to be re-baselined once the first OpenRouter trendline lands.
 
 ## Capture method
 
-- Source: Anthropic Console → Usage export → hourly granularity
+- Source: OpenRouter dashboard → Activity / usage export → hourly or daily granularity
 - Frequency: snapshot at end of each working day during spike + extra snapshot before/after Run 2
 - Storage: append CSV/JSON exports under `exports/` next to this file (gitignored if large; commit summary only)
 

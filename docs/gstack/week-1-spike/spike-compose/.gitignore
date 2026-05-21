@@ -1,0 +1,4 @@
+.env
+squid/squid.conf
+squid/blocklist.txt
+.playwright-cli/
