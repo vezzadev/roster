@@ -33,4 +33,9 @@ ANALYST_A_APP_TOKEN="$([ -r analyst-a-token.local ] && tr -d '\n' < analyst-a-to
 ANALYST_B_APP_TOKEN="$([ -r analyst-b-token.local ] && tr -d '\n' < analyst-b-token.local || true)"
 RESEARCHER_APP_TOKEN="$([ -r researcher-token.local ] && tr -d '\n' < researcher-token.local || true)"
 
+# Firecrawl API key for the researcher-web-mcp wrapper. Same tolerant pattern
+# as the per-agent tokens — missing file means only that service fails fast.
+export FIRECRAWL_API_KEY
+FIRECRAWL_API_KEY="$([ -r firecrawl.local ] && tr -d '\n' < firecrawl.local || true)"
+
 exec docker compose "$@"

@@ -162,12 +162,10 @@ Pick the tightest option that the Researcher's tool surface supports:
 2. **Outbound HTTP proxy** (e.g., Squid) on the Docker network, configured with the blocklist; Researcher's HTTP_PROXY env var points at it.
 3. **Last resort: trust + audit.** The Researcher self-reports every URL to [t5-researcher-urls.md](t5-researcher-urls.md); blocklist violations are caught at audit time, not at fetch time. Weakest control — contamination has already occurred by the time you read it.
 
-For Week 1 spike, **prefer #2 (outbound proxy)**. Squid with a `dstdomain` ACL list takes ~30 minutes to configure.
+**Decision (pre-Run 1, 2026-05-21):** option **#1 (MCP-level)**, implemented as the `researcher-web-mcp` wrapper service in `spike-compose/researcher-web-mcp/`. The wrapper exposes two tools — `web_search` and `web_scrape` — and forwards to Firecrawl SaaS. The hostname entries in `researcher-web-mcp/blocklist.txt` become Firecrawl's `excludeDomains` on every search call; the same list plus path/wildcard patterns are checked locally on every scrape call before any network egress. Firecrawl's `/v2/scrape` endpoint has **no** `excludeDomains` parameter (only `/v2/search` does), so handing the agent the raw firecrawl-mcp tools would have bypassed the blocklist on the dominant operation. Squid (#2) is no longer the planned default; the commented-out service in `docker-compose.yml` stays as an optional second layer if a future tool surface adds non-Firecrawl egress, but the wrapper handles the spike's web-fetch surface end-to-end. (#3 audit-only remains the fallback if the wrapper is ever bypassed.)
 
 ### Verification checklist (before Run 1)
 
 - [ ] `/founder/` invisible to all four agent accounts (tested by logging in as each).
-- [ ] Researcher's outbound proxy is up and the blocklist is loaded.
-- [ ] `curl -x http://squid:3128 https://www.bcg.com/` from the Researcher container returns 403 / blocked.
-- [ ] `curl -x http://squid:3128 https://www.worldbank.org/` from the Researcher container returns 200 (allow-list still works).
+- [x] Researcher's web-fetch wrapper (`researcher-web-mcp`) is up and `blocklist.txt` is loaded (verified 2026-05-21 — Letta-side tool-run for `web_scrape("https://www.bcg.com/")` returned `blocked_by_contamination_guard` rule `host:bcg.com` without round-trip to Firecrawl; the parallel `web_search` call to Firecrawl /v2/search succeeded and emitted `excludeDomains` covering all 11 hostname entries).
 - [ ] [t5-researcher-urls.md](t5-researcher-urls.md) is initialized and Researcher is wired to append to it on every fetch.

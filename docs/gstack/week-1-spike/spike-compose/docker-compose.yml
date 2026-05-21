@@ -139,6 +139,29 @@ services:
       NEXTCLOUD_PASSWORD: ${ANALYST_A_APP_TOKEN:?run ./bring-up.sh — sources ./analyst-a-token.local}
     networks: [spike]
 
+  # Wrapper MCP exposing two tools to the Researcher: web_search + web_scrape.
+  # Forwards to Firecrawl SaaS, but enforces the contamination blocklist
+  # server-side per ../t4-mcp-investigation.md "Researcher domain blocklist".
+  # Reason this wrapper exists rather than handing the Researcher the
+  # firecrawl-mcp tools directly: Firecrawl's /v2/scrape endpoint has no
+  # excludeDomains parameter — only /v2/search does. Without this wrapper an
+  # agent calling scrape(bcg.com) would bypass every contamination guard.
+  #
+  # blocklist.txt is checked-in (committed-in-repo source of truth alongside
+  # t4). audit/fetch.jsonl is gitignored — that's the per-run trail copied to
+  # ../t5-researcher-urls.md after Run 2.
+  researcher-web-mcp:
+    build: ./researcher-web-mcp
+    restart: unless-stopped
+    environment:
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:?run ./bring-up.sh — sources ./firecrawl.local}
+      BLOCKLIST_PATH: /etc/researcher-web/blocklist.txt
+      AUDIT_PATH: /var/log/researcher-web/fetch.jsonl
+    volumes:
+      - ./researcher-web-mcp/blocklist.txt:/etc/researcher-web/blocklist.txt:ro
+      - ./researcher-web-mcp/audit:/var/log/researcher-web
+    networks: [spike]
+
   # ─── Run 2 only — bring up after analyst-b + researcher exist in Nextcloud
   # and their app tokens are stashed in ./analyst-b-token.local / ./researcher-token.local
   #
