@@ -76,7 +76,11 @@ services:
       REDIS_HOST: nc-redis
       NEXTCLOUD_ADMIN_USER: ${NC_ADMIN_USER:-admin}
       NEXTCLOUD_ADMIN_PASSWORD: ${NC_ADMIN_PASSWORD:?set NC_ADMIN_PASSWORD in .env}
-      NEXTCLOUD_TRUSTED_DOMAINS: localhost
+      # `nextcloud` must be trusted because the MCP containers reach the
+      # server over the internal Docker bridge under that hostname — without
+      # it, every spreed/WebDAV request from MCP returns the "Access through
+      # untrusted domain" page (HTTP 400). Multi-value: space-separated.
+      NEXTCLOUD_TRUSTED_DOMAINS: "localhost nextcloud"
     volumes:
       - nc_data:/var/www/html
     networks: [spike]
