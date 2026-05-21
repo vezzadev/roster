@@ -37,10 +37,10 @@ jobs:
             exit 0
           fi
 
-          if [ "$STATE" = "commented" ] && printf '%s' "$BODY" | grep -qE '(^|[^A-Za-z0-9])LGTM([^A-Za-z0-9]|$)'; then
+          if [ "$STATE" = "commented" ] && printf '%s' "$BODY" | grep -qiE '(^|[^A-Za-z0-9])LGTM([^A-Za-z0-9]|$)'; then
             echo "LGTM detected in review comment from allowed reviewer: $APPROVER"
             exit 0
           fi
 
-          echo "::error::Review from '$APPROVER' is state '$STATE' and does not contain LGTM. Gate remains closed."
+          echo "::error::Review from '$APPROVER' is state '$STATE' and does not contain LGTM (case-insensitive). Gate remains closed."
           exit 1
