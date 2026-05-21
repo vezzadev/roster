@@ -103,11 +103,19 @@ def gate_hash(role_title: str, body: str) -> None:
 
 
 def gate_banned_tokens(role_title: str, body: str) -> None:
-    lower = body.lower()
-    hits = [tok for tok in BANNED_TOKENS if tok in lower]
+    # Word-boundary regex (case-insensitive) so "bain" doesn't match "Bahrain"
+    # and "bcg" doesn't match a hypothetical word containing the trigram.
+    # `re.escape` neutralizes the regex metacharacter in tokens like
+    # "strategy&" and "l.e.k.". `(?:^|\W)…(?:\W|$)` is the word-boundary form
+    # that works for tokens ending in non-word characters (\b doesn't).
+    hits = []
+    for tok in BANNED_TOKENS:
+        pattern = rf"(?:^|\W){re.escape(tok)}(?:\W|$)"
+        if re.search(pattern, body, re.IGNORECASE):
+            hits.append(tok)
     if hits:
         raise SystemExit(f"BANNED TOKEN HIT in {role_title}: {hits}")
-    print(f"  banned-token grep: 0 hits across {len(BANNED_TOKENS)} tokens")
+    print(f"  banned-token grep (word-boundary): 0 hits across {len(BANNED_TOKENS)} tokens")
 
 
 def main():
