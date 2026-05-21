@@ -12,7 +12,7 @@ The spike validates **Success Criterion #5** (see [../design/06-validation.md](.
 
 | Task | Priority | Effort (human / CC) | Owning file(s) | Status |
 |------|----------|---------------------|----------------|--------|
-| T1 | P1 | 3h / 20min | [t1-grading-rubric.md](t1-grading-rubric.md) | 🟡 anchor + dimensions drafted; structural rewrite to match BCG Vietnam sections still open |
+| T1 | P1 | 3h / 20min | [t1-grading-rubric.md](t1-grading-rubric.md) | ✅ done — 8 dimensions remapped to actual BCG Vietnam section order; "5 = better" tier codes the gaps BCG itself doesn't fill (paired mitigations, decision framework, archetype bifurcation, consistent forecast methodology) |
 | T2 | P1 | 30min / 5min | [t2-fallback-bullets.md](t2-fallback-bullets.md) | ✅ done — 3 failure modes × 4 alternatives + terminal exits |
 | T3 | P1 | 2h / 10min | (this folder) | ✅ done — 11 files scaffolded |
 | T4 | P1 | 3d / 1d | [t4-mcp-investigation.md](t4-mcp-investigation.md) | ✅ done — adopt cbcoutinho/nextcloud-mcp-server; MVP build skipped |
