@@ -44,7 +44,7 @@ read up on what happened in its absence.
 
 ## How it compares
 
-| | [Gas Town](https://github.com/sourcegraph/gas-town) | [gstack](https://github.com/pedropaulovc/personal-marketplace) | Roster |
+| | [Gas Town](https://github.com/sourcegraph/gas-town) | [gstack](https://github.com/garrytan/gstack) | Roster |
 |---|---|---|---|
 | Layer | Agent factory | Per-agent skill packs | Team provisioning |
 | Domain | Coding only | Any (skills like /qa, /ship, /review) | Knowledge work (research, strategy, content) |
@@ -209,7 +209,7 @@ edits (structure, wording, clarity), content edits (scope, information,
 ideas), and new content (text, images, analysis, ideas). AI was
 human-initiated — prompted for its contributions, or AI assistance was
 enabled. All AI-generated content was reviewed and approved by a human.
-Models/tools used: Claude Opus 4.7 and [gstack](https://github.com/pedropaulovc/personal-marketplace)
+Models/tools used: Claude Opus 4.7 and [gstack](https://github.com/garrytan/gstack)
 1.40.
 
 Format: [AI Attribution Toolkit](https://aiattribution.github.io/) (IBM
