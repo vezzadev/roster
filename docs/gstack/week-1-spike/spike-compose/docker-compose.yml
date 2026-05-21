@@ -98,22 +98,65 @@ services:
       LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
     volumes:
       - letta_data:/root/.letta
+      # Spike-only: Letta's stock url_validation rejects private-IP MCP URLs as
+      # SSRF; we run MCP in the same Docker bridge, so we bind-mount a
+      # permissive replacement. See ./letta-patches/url_validation.py header.
+      - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
     networks: [spike]
 
-  nextcloud-mcp:
-    # cbcoutinho/nextcloud-mcp-server (AGPL-3.0) — adopted per
-    # ../t4-mcp-investigation.md "Decision". Verify the canonical
-    # image name/tag at https://github.com/cbcoutinho/nextcloud-mcp-server
-    # before first boot; pin the digest in ../t5-env-manifest.md.
+  # One nextcloud-mcp container per agent identity. The cbcoutinho image
+  # (AGPL-3.0, adopted per ../t4-mcp-investigation.md "Decision") authenticates
+  # as a single Nextcloud user via NEXTCLOUD_USERNAME + NEXTCLOUD_PASSWORD env
+  # — so isolating one container per agent prevents the MCP from being used
+  # to impersonate the wrong agent. Each container's app token is sourced
+  # from a gitignored ./<role>-token.local by ./bring-up.sh; if the token
+  # file is missing the service fails fast for that agent only.
+  # Transport: streamable_http on :8000/mcp (the only HTTP transport this
+  # image supports; SSE was deprecated upstream). Bare port not exposed to
+  # the host — Letta reaches each instance over the internal `spike` network.
+
+  nextcloud-mcp-em:
     image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
     restart: unless-stopped
     depends_on: [nextcloud]
     environment:
-      NEXTCLOUD_BASE_URL: http://nextcloud
-      # Per-agent app passwords are wired into Letta's MCP client config,
-      # not into this server. The server accepts (username, app_password)
-      # on each call from Letta.
+      NEXTCLOUD_HOST: http://nextcloud
+      NEXTCLOUD_USERNAME: em
+      NEXTCLOUD_PASSWORD: ${EM_APP_TOKEN:?run ./bring-up.sh — sources ./em-token.local}
     networks: [spike]
+
+  nextcloud-mcp-analyst-a:
+    image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
+    restart: unless-stopped
+    depends_on: [nextcloud]
+    environment:
+      NEXTCLOUD_HOST: http://nextcloud
+      NEXTCLOUD_USERNAME: analyst-a
+      NEXTCLOUD_PASSWORD: ${ANALYST_A_APP_TOKEN:?run ./bring-up.sh — sources ./analyst-a-token.local}
+    networks: [spike]
+
+  # ─── Run 2 only — bring up after analyst-b + researcher exist in Nextcloud
+  # and their app tokens are stashed in ./analyst-b-token.local / ./researcher-token.local
+  #
+  # nextcloud-mcp-analyst-b:
+  #   image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
+  #   restart: unless-stopped
+  #   depends_on: [nextcloud]
+  #   environment:
+  #     NEXTCLOUD_HOST: http://nextcloud
+  #     NEXTCLOUD_USERNAME: analyst-b
+  #     NEXTCLOUD_PASSWORD: ${ANALYST_B_APP_TOKEN:?run ./bring-up.sh — sources ./analyst-b-token.local}
+  #   networks: [spike]
+  #
+  # nextcloud-mcp-researcher:
+  #   image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
+  #   restart: unless-stopped
+  #   depends_on: [nextcloud]
+  #   environment:
+  #     NEXTCLOUD_HOST: http://nextcloud
+  #     NEXTCLOUD_USERNAME: researcher
+  #     NEXTCLOUD_PASSWORD: ${RESEARCHER_APP_TOKEN:?run ./bring-up.sh — sources ./researcher-token.local}
+  #   networks: [spike]
 
   # ─── Run 2 only — uncomment + verify before booting Run 2 ────────────────
   #
