@@ -4,11 +4,43 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   gate:
     name: Awaiting human review
     runs-on: ubuntu-slim
-    environment: pr-review-gate
     steps:
-      - run: echo "Human approver acknowledged this PR's diff."
+      - name: Verify approver identity
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          STATE: ${{ github.event.review.state }}
+          APPROVER: ${{ github.event.review.user.login }}
+          BODY: ${{ github.event.review.body }}
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            echo "::error::No approving review yet. Gate closed until an allowed reviewer approves or comments LGTM."
+            exit 1
+          fi
+
+          case "$APPROVER" in
+            pedropaulovc|pedrovezzadev) ;;
+            *)
+              echo "::error::Reviewer '$APPROVER' is not in the allowed list (pedropaulovc, pedrovezzadev)."
+              exit 1
+              ;;
+          esac
+
+          if [ "$STATE" = "approved" ]; then
+            echo "Approved by allowed reviewer: $APPROVER"
+            exit 0
+          fi
+
+          if [ "$STATE" = "commented" ] && printf '%s' "$BODY" | grep -qiE '(^|[^A-Za-z0-9])LGTM([^A-Za-z0-9]|$)'; then
+            echo "LGTM detected in review comment from allowed reviewer: $APPROVER"
+            exit 0
+          fi
+
+          echo "::error::Review from '$APPROVER' is state '$STATE' and does not contain LGTM (case-insensitive). Gate remains closed."
+          exit 1
