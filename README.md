@@ -191,3 +191,25 @@ git push origin v0.1.0
   premises, architecture, failure modes, open questions.
 - [AGENTS.md](AGENTS.md) — code conventions, build commands, project
   structure.
+
+## AI attribution
+
+<a href="https://aiattribution.github.io/statements/AIA-PAI-SeCeNc-Hin-R-?model=Claude%20Opus%204.7-v1.0">
+  <img src="docs/ai-attribution/icons/primarily-ai-icon.svg" height="20" alt="Primarily AI" title="Primarily AI" />
+  <img src="docs/ai-attribution/icons/stylistic-edits-icon.svg" height="20" alt="Stylistic edits" title="Stylistic edits" />
+  <img src="docs/ai-attribution/icons/content-edits-icon.svg" height="20" alt="Content edits" title="Content edits" />
+  <img src="docs/ai-attribution/icons/new-content-icon.svg" height="20" alt="New content" title="New content" />
+  <img src="docs/ai-attribution/icons/human-initiated-icon.svg" height="20" alt="Human-initiated" title="Human-initiated" />
+  <img src="docs/ai-attribution/icons/certified-review-icon.svg" height="20" alt="Reviewed" title="Reviewed" />
+  &nbsp;<strong>AIA PAI SeCeNc Hin R Claude Opus 4.7 v1.0</strong>
+</a>
+
+This work was primarily AI-generated. AI was used to make stylistic
+edits (structure, wording, clarity), content edits (scope, information,
+ideas), and new content (text, images, analysis, ideas). AI was
+human-initiated — prompted for its contributions, or AI assistance was
+enabled. All AI-generated content was reviewed and approved by a human.
+Model used: Claude Opus 4.7.
+
+Format: [AI Attribution Toolkit](https://aiattribution.github.io/) (IBM
+Research, [CHI 2025](https://dl.acm.org/doi/full/10.1145/3706598.3713522)).
