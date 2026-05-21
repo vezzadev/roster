@@ -44,7 +44,7 @@ read up on what happened in its absence.
 
 ## How it compares
 
-| | [Gas Town](https://github.com/sourcegraph/gas-town) | [gstack](https://github.com/pedropaulovc/personal-marketplace) | Roster |
+| | [Gas Town](https://github.com/sourcegraph/gas-town) | [gstack](https://github.com/garrytan/gstack) | Roster |
 |---|---|---|---|
 | Layer | Agent factory | Per-agent skill packs | Team provisioning |
 | Domain | Coding only | Any (skills like /qa, /ship, /review) | Knowledge work (research, strategy, content) |
@@ -191,3 +191,26 @@ git push origin v0.1.0
   premises, architecture, failure modes, open questions.
 - [AGENTS.md](AGENTS.md) — code conventions, build commands, project
   structure.
+
+## AI attribution
+
+<a href="https://aiattribution.github.io/statements/AIA-PAI-SeCeNc-Hin-R-?model=Claude%20Opus%204.7%2C%20gstack%201.40-v1.0">
+  <strong>AIA PAI SeCeNc Hin R Claude Opus 4.7, gstack 1.40 v1.0</strong>&nbsp;
+  <img src="docs/ai-attribution/icons/primarily-ai-icon.svg" height="20" alt="Primarily AI" title="Primarily AI" />
+  <img src="docs/ai-attribution/icons/stylistic-edits-icon.svg" height="20" alt="Stylistic edits" title="Stylistic edits" />
+  <img src="docs/ai-attribution/icons/content-edits-icon.svg" height="20" alt="Content edits" title="Content edits" />
+  <img src="docs/ai-attribution/icons/new-content-icon.svg" height="20" alt="New content" title="New content" />
+  <img src="docs/ai-attribution/icons/human-initiated-icon.svg" height="20" alt="Human-initiated" title="Human-initiated" />
+  <img src="docs/ai-attribution/icons/certified-review-icon.svg" height="20" alt="Reviewed" title="Reviewed" />
+</a>
+
+This work was primarily AI-generated. AI was used to make stylistic
+edits (structure, wording, clarity), content edits (scope, information,
+ideas), and new content (text, images, analysis, ideas). AI was
+human-initiated — prompted for its contributions, or AI assistance was
+enabled. All AI-generated content was reviewed and approved by a human.
+Models/tools used: Claude Opus 4.7 and [gstack](https://github.com/garrytan/gstack)
+1.40.
+
+Format: [AI Attribution Toolkit](https://aiattribution.github.io/) (IBM
+Research, [CHI 2025](https://dl.acm.org/doi/full/10.1145/3706598.3713522)).
