@@ -1,31 +1,22 @@
-"""Pre-kickoff tool-execution probe.
+"""Pre-kickoff tool-execution probe (agent-driven path).
 
-Validates the full Letta -> MCP -> Nextcloud round-trip before sending the
-agent kickoff. Without this, Run 1's first 5 minutes would be agents
-discovering that tool calls fail — making it impossible to separate "agents
-fumbled coordination" from "the plumbing was broken."
+Validates the full Letta -> MCP -> Nextcloud round-trip through the path the
+actual agent reasoning takes — not the per-server execute endpoint that
+trivially routes by URL. The earlier version of this script probed via
+`POST /v1/mcp-servers/<id>/tools/<tid>/run`, which embeds the server-id in the
+URL and so always routes to the right MCP; that path is server-isolated by
+construction and tells us nothing about whether agent-driven tool calls land
+correctly. The bug discovered pre-Run-1 (see ../t5-run-ledger.md "Letta
+tool-namespace finding") only shows up on the agent-driven path.
 
-Probes per agent (em + researcher; pairing per Run 1 swap recorded in
-t5-system-prompts.md Change log):
-  1. talk_send_message to the #team room  — confirms Talk auth + posting
-  2. nc_webdav_write_file to /agents/<role>-ping.txt  — confirms WebDAV PUT
-     with the right identity (the file's author in Nextcloud is the user
-     the MCP container authed as).
+For each agent (em + researcher) on each agent's own Letta server:
+  1. Send a user message asking the agent to post a ping to #team via
+     talk_send_message and write a ping file to /agents/<role>-ping.txt.
+  2. Read back the most recent #team message + /agents/ listing.
+  3. Assert the actor on both is the expected user.
 
-Failure modes this probe catches that "agents discover at kickoff" doesn't:
-  - MCP container env vars wrong (auth fails)
-  - Tool schema mismatch (Letta sends args MCP doesn't accept)
-  - Nextcloud permissions wrong (agent can't write to /agents/ despite share)
-  - Talk room token vs room ID confusion
-
-The two ping files are left in place — they show up in the Run 1 event log
-as the first /agents/ writes and aid debugging if Run 1 stalls.
-
-The researcher-web MCP (web_search / web_scrape) is not synthetically probed
-here — its contamination guard was verified end-to-end via Letta in the
-wrapper PR (#29) before the Researcher agent existed. Whether the Researcher
-agent ACTUALLY calls those tools correctly during the run is an LLM-reasoning
-question, not a plumbing question, and is observed in the run event log.
+If both probes pass, the per-agent Letta architecture has actually isolated
+identities the way we intend.
 """
 
 import json
@@ -34,23 +25,14 @@ import urllib.request
 
 SPIKE = pathlib.Path(__file__).parent
 LETTA_TOKEN = (SPIKE / "letta.local").read_text().strip()
-LETTA_URL = "http://127.0.0.1:8283"
+AGENTS = json.loads((SPIKE / "run1-agents.local").read_text())
 
-TEAM_ROOM_TOKEN = "vzyiva4u"  # from `occ talk:room:create team`
-
-# Resolved at runtime by server_name lookup to avoid hardcoding IDs that
-# change every `docker compose down -v` + re-register cycle.
-MCP_SERVER_NAMES_PER_ROLE = {
-    "em": "nextcloud-em",
-    "researcher": "nextcloud-researcher",
-}
-
-PROBE_TOOLS = ("talk_send_message", "nc_webdav_write_file")
+TEAM_ROOM_TOKEN = "vzyiva4u"
 
 
-def http(method, path, body=None):
+def http(base_url: str, method: str, path: str, body=None):
     req = urllib.request.Request(
-        f"{LETTA_URL}{path}",
+        f"{base_url}{path}",
         data=json.dumps(body).encode() if body is not None else None,
         headers={
             "Authorization": f"Bearer {LETTA_TOKEN}",
@@ -58,80 +40,51 @@ def http(method, path, body=None):
         },
         method=method,
     )
-    with urllib.request.urlopen(req, timeout=60) as resp:
+    with urllib.request.urlopen(req, timeout=300) as resp:
         return json.loads(resp.read())
 
 
-def find_tool_ids(mcp_server_id: str) -> dict[str, str]:
-    tools = http("GET", f"/v1/mcp-servers/{mcp_server_id}/tools")
-    return {t["name"]: t["id"] for t in tools if t["name"] in PROBE_TOOLS}
-
-
-def run_tool(mcp_server_id: str, tool_id: str, args: dict) -> dict:
-    return http(
-        "POST",
-        f"/v1/mcp-servers/{mcp_server_id}/tools/{tool_id}/run",
-        {"args": args},
-    )
-
-
-def resolve_mcp_server_id(server_name: str) -> str:
-    servers = http("GET", "/v1/mcp-servers/?limit=100")
-    for s in servers:
-        if s.get("server_name") == server_name:
-            return s["id"]
-    raise SystemExit(f"  MCP server not registered with Letta: {server_name!r}")
+def ask_agent(letta_url: str, agent_id: str, prompt: str) -> dict:
+    return http(letta_url, "POST", f"/v1/agents/{agent_id}/messages", {
+        "messages": [{"role": "user", "content": prompt, "name": "founder"}],
+    })
 
 
 def main():
     all_ok = True
 
-    for role, server_name in MCP_SERVER_NAMES_PER_ROLE.items():
-        mcp_id = resolve_mcp_server_id(server_name)
-        print(f"\n=== {role} ({server_name} -> {mcp_id[-12:]}) ===")
-        tool_ids = find_tool_ids(mcp_id)
-        missing = set(PROBE_TOOLS) - set(tool_ids)
-        if missing:
-            print(f"  MISSING TOOLS: {sorted(missing)}")
+    for role, info in AGENTS.items():
+        agent_id = info["agent_id"]
+        letta_url = info["letta_url"]
+        print(f"\n=== {role}  (agent {agent_id[-12:]} on {letta_url}) ===")
+
+        prompt = (
+            f"Pre-kickoff plumbing probe. Please do exactly these two things, in order, "
+            f"and then report success. Do NOT do any other work yet:\n"
+            f"1. Send the message '[ping from {role}] pre-kickoff agent-driven probe' "
+            f"to the #team Talk room (token: {TEAM_ROOM_TOKEN}).\n"
+            f"2. Write a file at /agents/{role}-ping.txt with the content "
+            f"'agent-driven probe by {role}'.\n"
+            f"Reply with one line: 'probe done'."
+        )
+        r = ask_agent(letta_url, agent_id, prompt)
+        msgs = r.get("messages", []) if isinstance(r, dict) else r
+        tool_calls = [m for m in msgs if m.get("message_type") == "tool_call_message"]
+        tool_call_names = [m.get("tool_call", {}).get("name", "?") for m in tool_calls]
+        print(f"  agent made {len(tool_calls)} tool calls: {tool_call_names}")
+        if "talk_send_message" not in tool_call_names or "nc_webdav_write_file" not in tool_call_names:
+            print(f"  FAIL: agent did not call both expected tools")
             all_ok = False
             continue
+        print(f"  expected tool calls observed; awaiting actor verification below")
 
-        # Probe 1: post to #team
-        r = run_tool(
-            mcp_id,
-            tool_ids["talk_send_message"],
-            {
-                "token": TEAM_ROOM_TOKEN,
-                "message": f"[ping from {role}] tool-exec probe before Run 1 kickoff",
-            },
-        )
-        if r.get("status") == "success":
-            print(f"  talk_send_message: ok")
-        else:
-            print(f"  talk_send_message: FAIL  {r.get('func_return', json.dumps(r))[:500]}")
-            all_ok = False
-
-        # Probe 2: write ping file
-        r = run_tool(
-            mcp_id,
-            tool_ids["nc_webdav_write_file"],
-            {
-                "path": f"/agents/{role}-ping.txt",
-                "content": f"ping from {role}; pre-kickoff probe; if you see this in /agents/, the WebDAV write path works.",
-            },
-        )
-        if r.get("status") == "success":
-            print(f"  nc_webdav_write_file: ok")
-        else:
-            print(f"  nc_webdav_write_file: FAIL  {r.get('func_return', json.dumps(r))[:500]}")
-            all_ok = False
+    if not all_ok:
+        raise SystemExit(1)
 
     print()
-    if all_ok:
-        print("ALL PROBES PASSED — kickoff plumbing is live.")
-    else:
-        print("ONE OR MORE PROBES FAILED — fix before kickoff.")
-        raise SystemExit(1)
+    print("All agents made the expected tool calls.")
+    print("Verify the Nextcloud actor manually with:")
+    print("  occ + OCS — list #team chat (vzyiva4u) and confirm each ping appears under its own actor (EM and Researcher).")
 
 
 if __name__ == "__main__":

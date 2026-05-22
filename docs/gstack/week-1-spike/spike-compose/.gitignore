@@ -3,3 +3,11 @@ squid/squid.conf
 squid/blocklist.txt
 researcher-web-mcp/audit/
 .playwright-cli/
+# driver.py spike-time relay runtime files (state file is also matched by *.local
+# at the repo root, but be explicit here so it's clear).
+driver.log
+driver-state.local
+# Kickoff bookkeeping files
+kickoff-timestamp.local
+run1-kickoff-response.local
+run1-followup-response.local

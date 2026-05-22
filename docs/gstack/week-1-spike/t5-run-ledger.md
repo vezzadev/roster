@@ -23,21 +23,79 @@ Codex T4-D: without a frozen prompt + recorded version per run, the experiment i
 
 - Prompts frozen at hash: EM=`e966a65548025d0dfe65ac52a24e4a855ec103de3a2223a966757f304f0ad40f` R=`2fff77b9103e233e7a7eea4728e90d668a42fd3e9e3d402c6ac7a86d29435d24`
 - Contamination grep: 0 hits across 25 banned tokens for both prompts (verified pre-boot by `spike-compose/wire-run-1.py` with word-boundary regex)
-- Letta agent IDs: EM=`agent-414ea769-19a5-4553-bc49-ab8fb828c5f1`, Researcher=`agent-92367e4d-faeb-4100-94f1-ead0d2e9690a`
+- Letta architecture: **one Letta container per agent** — `letta-em` (127.0.0.1:8283) and `letta-researcher` (127.0.0.1:8284), each with the role's MCP sidecars registered only on its own Letta. See "Letta tool-namespace finding" below for why.
+- Letta agent IDs (per-agent Letta architecture): EM=`agent-0a9bce41-6b16-4db8-88fe-150ffd255ad6` on `letta-em`, Researcher=`agent-b4a10f8f-ce23-4ebd-a3c1-39d4af6ec7e8` on `letta-researcher`. The earlier singleton-Letta IDs (`agent-414ea769…` EM, `agent-92367e4d…` Researcher) are retired — see finding below.
 - Agent tool counts: EM = 15 cbcoutinho (Talk + WebDAV) + 3 Letta base = 18. Researcher = 15 cbcoutinho (Talk + WebDAV, scoped to researcher user) + 2 researcher-web wrapper (web_search + web_scrape) + 3 Letta base = 20.
 - Env manifest snapshot: see [t5-env-manifest.md](t5-env-manifest.md) "Run 1 — 2026-05-21"
-- Started: _TBD — kicked off when first user message posts to EM agent_
-- Ended: _TBD_
-- Outcome: _success / partial / failure_
+- Started: 2026-05-22 00:31:23 UTC (founder posted `Begin the engagement.` to EM agent on letta-em; EM responded with 18-message turn, posted kickoff brief to `#team` as actor `em` at 00:32:22 UTC)
+- Ended: 2026-05-22 01:21:10 UTC — EM posted `brief final` to `#team` as msg 279. Wall-clock ~50 min, including a ~3-min stall (01:12:35 → 01:15:49 UTC) when the OpenRouter monthly cap of $50 was hit; founder raised it to $100 and the run resumed.
+- Outcome: **success** — full structured `/agents/brief.md` produced (208 lines, 34,465 bytes), integrating all 6 Researcher bundles (B, C, C-followup-ALFI, D, D-followup, E, E-supplement, F, A). Originality + contamination guards both held: EM corrected its own training-recalled details twice during the run (the "Jan 2024 three-way Shipper/Waresix/Trukita merger" — only Dec 2020 Waresix–Trukita is supportable; FX figures "~16,100 / 8-10% depreciation" → "IDR 17,648 May 2026, ~22-24% cumulative"); Researcher made 112 web fetches via the wrapper, **0 blocked during the run** (the single `host:bcg.com` block in `researcher-web-mcp/audit/fetch.jsonl` is the pre-kickoff verification probe at 00:21:29 UTC). Identity isolation held end-to-end — every `talk_send_message` posted as the correct actor. Artifacts archived to `docs/gstack/week-1-spike/run1-artifacts/`.
 - Notes:
+  - EM oriented itself before sending the brief: `talk_list_participants` (vzyiva4u) → `nc_webdav_list_directory` (/agents) → `talk_list_conversations` → file-backed working notes at `/agents/_em-notes.md` → kickoff post to `#team`. Identity isolation confirmed at the tool-return layer (`actorId: em` echoed back).
+  - **Memory blocks absent**: EM's first attempt at `memory_insert(label="human")` errored with `Block field human does not exist (available sections = ())`. The agents were created via `POST /v1/agents/` with `tool_ids` + `include_base_tools=true` but without explicit memory blocks; Letta apparently no longer ships default `human` / `persona` blocks. EM fell back to file-based notes in `/agents/_em-notes.md`, so the run is not blocked. Follow-up for Run 2 wiring is captured in "Follow-ups before Run 2" below.
+  - **Analyst-A ghost in `#team`**: the spike-compose snapshot lists `em + analyst-a + researcher` as `#team` members from the pre-swap setup. The new EM agent saw analyst-a in `talk_list_participants` output and stated it would treat Analyst A as a teammate (DM expected via `EM-A` room token `eg72sheb`). Decision: _see Event log row "Analyst-A presence" below_.
+
+### Follow-ups before Run 2
+
+- **Add default memory blocks to agent creation in `wire-run-1.py`.** Letta 0.16.8 no longer ships default `human` + `persona` blocks; `memory_insert(label="human", …)` errors with `Block field human does not exist (available sections = ())`. Run 2 agents (Analyst A + Analyst B in particular) will likely lean on memory blocks more than Run 1's EM did — file-backed notes are an OK fallback for one synthesis agent but get awkward across four. Action: extend the `POST /v1/agents/` payload in `wire-run-1.py` with an explicit `memory_blocks` list defining at least `human` and `persona`, OR call `POST /v1/agents/<id>/core-memory/blocks` after agent create. Verify by re-running the agent-driven probe and asserting `memory_insert` succeeds.
+- **Reconcile #team room membership before Run 2 reuses the same Nextcloud.** Run 1 removed `analyst-a` from `#team` (token `vzyiva4u`). For Run 2 add analyst-a back **and** add the new `analyst-b` user; verify all four agent actors are listed by `talk_list_participants(vzyiva4u)`. Same for the per-pair DM rooms (`EM-A`, `EM-B`, `A-B`, `A-Researcher`, `B-Researcher`).
+- **`spike-compose/driver.py` runtime files.** `driver.log` and `driver-state.local` accumulate per-run; truncate or rotate before Run 2 so the state file doesn't start tick 1 already-advanced past prior messages.
 
 ### Event log (Run 1)
 
 | Timestamp | Actor | Event |
 |-----------|-------|-------|
 | 2026-05-21 22:XX UTC | operator | Pre-boot gates (pre-swap): prompt hashes match (EM + Analyst A), banned-token grep 0 hits, both Letta agents created with 15 MCP tools each. Superseded by post-swap row below. |
-| 2026-05-22 00:XX UTC | operator | Run 1 swapped from EM+Analyst A to EM+Researcher (see header). Old agents deleted; new agents created with re-frozen prompts. Pre-boot gates re-passed: EM hash + Researcher hash both verify, banned-token grep 0 hits across 25 tokens, identity-isolated tool-exec probe (talk_send_message + nc_webdav_write_file) passes for both agents. |
-| _TBD_ | operator | Kickoff message posted to EM agent |
+| 2026-05-22 00:XX UTC | operator | Run 1 swapped from EM+Analyst A to EM+Researcher (see header). Old agents deleted; new agents created with re-frozen prompts. Pre-boot gates re-passed: EM hash + Researcher hash both verify, banned-token grep 0 hits across 25 tokens, identity-isolated tool-exec probe (talk_send_message + nc_webdav_write_file) passes for both agents via the **per-server execute endpoint** `POST /v1/mcp-servers/<sid>/tools/<tid>/run`. |
+| 2026-05-22 00:1X UTC | operator | Founder posted `Begin the engagement.` to EM agent on the singleton Letta. EM's call to `talk_send_message` landed on the Researcher's MCP container — the brief was published to `#team` as actor `researcher`. **Letta tool-namespace finding** (below) identified. Re-kickoff postponed; per-agent Letta architecture work begun. |
+| 2026-05-22 00:2X UTC | operator | Per-agent Letta architecture live: `letta-em` + `letta-researcher` each holding their own MCP registrations. Singleton `letta` container + `letta_data` volume destroyed. New agents created (EM=`agent-0a9bce41…`, Researcher=`agent-b4a10f8f…`). Hash + banned-token gates re-passed. **Agent-driven probe passes**: EM's `talk_send_message` posts as actor `em`, Researcher's as `researcher`; both `/agents/<role>-ping.txt` files written. |
+| 2026-05-22 00:31:23 UTC | operator | Founder posted `Begin the engagement.` to EM agent (`agent-0a9bce41…` on letta-em). 62.5s response. EM orientation pass + kickoff brief published to `#team` at 00:32:22 UTC as actor `em` (HTTP 200, message id 253). |
+| 2026-05-22 00:32:22 UTC | em (agent) | Kickoff brief posted to `#team`. Working notes initialized at `/agents/_em-notes.md`. |
+| 2026-05-22 00:33:00 UTC | operator | Removed `analyst-a` from `#team` participants (`occ talk:room:remove vzyiva4u analyst-a`) to keep the Run 1 ablation clean — EM had inferred A would be on the team from the participant list. |
+| 2026-05-22 00:34:25 UTC | operator | Posted clarification to EM agent: "the only teammate you have is the Researcher. Both Senior Analysts are unavailable for this run — cover their depth threads yourself." 117s response: EM updated `/agents/_em-notes.md`, posted team-composition correction to `#team` (msg id 255), sent detailed first sourcing batch to Researcher in `EM-Researcher` (msg id 256), drafted skeleton at `/agents/_em-outline.md`, polled `EM-Researcher` for a reply (none), and paused. |
+| 2026-05-22 00:39:37 UTC | operator | **Started `spike-compose/driver.py` relay** — polls `#team` + `EM-Researcher` every 30s via admin OCS and wakes the right per-agent Letta with a digest of new messages. State at `driver-state.local`; events at `driver.log`. **v1 will replace this with the [`vezzadev/letta-mcp-channel`](https://github.com/vezzadev/letta-mcp-channel) generic MCP channel plugin** for Letta Code — push-based: agents receive Nextcloud notifications/resources/updates as inbound MCP messages and reply via native MCP tools. The spike driver is a synchronous-polling stand-in until that wires up. |
+| 2026-05-22 00:39:37 → 01:12:38 UTC | em + researcher (agents) | Loop produced bundles B, C, C-followup-ALFI, D, D-followup, F, E, E-supplement in sequence via the EM-Researcher DM (msg ids 256-275). Each Researcher bundle: captured by EM to `/agents/_research-bundle-<x>.md` and acknowledged with implication notes. Researcher's audit log accumulated to 112 fetches total — every `web_search` call passing the 11-host consulting-firm `excludeDomains`; 0 blocked during the run. |
+| 2026-05-22 01:08:00 UTC | operator | Posted pacing nudge to EM: stop intake after Bundle A, start drafting `/agents/brief.md`, target final <01:30 UTC. |
+| 2026-05-22 01:09:22 UTC | em (agent) | Captured Bundle E + posted ack (msg 274). |
+| 2026-05-22 01:11:00 UTC | em (agent) | First-pass `/agents/brief.md` drafted (28,703 bytes) — 9 sections + 2 appendices, citations [^B*]/[^C*]/[^D*]/[^E*]/[^F*] (no Bundle A citations yet — A had not been posted at the time of EM's `talk_get_messages`). |
+| 2026-05-22 01:11:54 UTC | researcher (agent) | Posted Bundle A (msg 276, EM-Researcher) + "research sweep complete" cross-post (msg 277, `#team`). |
+| 2026-05-22 01:12:35 UTC | external | OpenRouter monthly cap (`$50`) hit. Letta returns HTTP 500 with `PERMISSION_DENIED: Permission denied by OpenAI: Error code: 403 - Key limit exceeded` on the next four wake attempts. Driver state advances past the failed messages (intentional — failed wakes are not retried). |
+| 2026-05-22 01:13:11 UTC | operator | Driver stopped (SIGINT) — no point burning wakes that all 500. |
+| 2026-05-22 01:14:xx UTC | external | Founder raised OpenRouter cap to `$100`. |
+| 2026-05-22 01:15:49 UTC | operator | Driver restarted (same state file — does not re-wake for the failed-during-stall messages; those were already in agent context anyway from EM's earlier `talk_get_messages` and Researcher's own post history). |
+| 2026-05-22 01:16:02 UTC | operator | Posted "finalize" wake to EM: read msg 276 (Bundle A), capture to `_research-bundle-a.md`, integrate into §4 with new `[^A*]` footnotes, post `brief final` to `#team`. 317s response. |
+| 2026-05-22 01:21:10 UTC | em (agent) | `brief final` posted to `#team` as msg 279. `/agents/brief.md` grew to 34,465 bytes; added 14 `[^A*]` footnotes; "Macro setting" paragraph at top of §4 (World Bank IEP / e-Conomy SEA / APJII); FX figures corrected throughout to IDR 17,648 / 22-24% cumulative; "kill if IDR breaks 18,500" line added. |
+| 2026-05-22 01:21:56 UTC | operator | Driver stopped. Final artifacts pulled to `docs/gstack/week-1-spike/run1-artifacts/`. |
+
+## Letta tool-namespace finding (pre-Run-1, 2026-05-22)
+
+**Symptom.** Founder posted `Begin the engagement.` to the EM agent. EM reasoned correctly, produced an Indonesia-market kickoff brief, and called `talk_send_message(token="vzyiva4u", message="<brief>")`. The brief landed in `#team` but as actor `researcher`, not `em`. The Founder-facing chat in `EM-Researcher` showed nothing.
+
+**What we expected.** Each agent's MCP sidecar (`nextcloud-mcp-em`, `nextcloud-mcp-researcher`) authenticates to Nextcloud as a different user via its own app token. So a `talk_send_message` call routed to the EM sidecar appears as `em`; routed to the Researcher sidecar appears as `researcher`. Identity isolation lives in the sidecar/MCP boundary.
+
+**What we found.** Letta dedupes MCP tool names **globally within a Letta instance**, not per MCP server. Both sidecars expose a tool named `talk_send_message`. When Letta registered the second sidecar, it kept one `tool_id` for that name and bound it to whichever MCP server was registered **last** — `nextcloud-researcher` in our case. Both agents in the singleton Letta saw the same `tool_id` in their `tool_ids` list. So when the EM agent's reasoning produced the JSON tool call `{"name": "talk_send_message", …}`, Letta resolved it via the global `tool_id` and dispatched to `nextcloud-researcher`, which authenticated to Nextcloud as `researcher`.
+
+**Why the earlier probe missed it.** The original `probe-tools.py` invoked tools via the per-server execute endpoint `POST /v1/mcp-servers/<server_id>/tools/<tid>/run`. That URL carries the server ID explicitly, so Letta routes by URL — not by global `tool_id` lookup. The probe always hit the right sidecar by URL construction, and passed. It told us nothing about the agent-driven path the real run takes.
+
+**Fix.** Per-agent Letta containers, one per agent, with each role's MCP sidecars registered **only on that role's Letta**. Tool-name collisions then sit in separate Letta databases and cannot collapse. Compose changes:
+
+- `letta` → `letta-em` (8283) + `letta-researcher` (8284). Each gets its own `letta_<role>_data` volume + the `url_validation.py` SSRF-guard patch bind-mount.
+- `nextcloud-mcp-em` registered only on `letta-em`; `nextcloud-mcp-researcher` + `researcher-web` registered only on `letta-researcher`.
+- `spike-compose/wire-run-1.py` extended with a per-role `letta_url`; the script POSTs MCPs and creates the agent against the role's own Letta.
+- `spike-compose/probe-tools.py` rewritten to use the agent-driven path (POST `/v1/agents/<id>/messages` with a prompt asking for the tool call) instead of the per-server execute endpoint, so future regressions don't slip past.
+- Letta stubs for `letta-analyst-a` (8285) + `letta-analyst-b` (8286) commented into `docker-compose.yml`, ready for Run 2.
+
+**Verification (2026-05-22).** Post-fix agent-driven probe:
+
+| Agent | Letta | `talk_send_message` actor | `/agents/<role>-ping.txt` |
+|-------|-------|---------------------------|---------------------------|
+| em (`agent-0a9bce41…`) | letta-em (8283) | `em` ✓ | `/agents/em-ping.txt` ✓ |
+| researcher (`agent-b4a10f8f…`) | letta-researcher (8284) | `researcher` ✓ | `/agents/researcher-ping.txt` ✓ |
+
+**Carryover implications.**
+- The polluted `#team` history (one researcher-attributed kickoff brief + two pairs of probe messages) is left in place as evidence of the bug — to be considered for cleanup before re-kickoff if it would confuse the EM agent's view of #team. The new EM agent is created fresh with no memory; it will only encounter the polluted history if/when it queries `talk_get_messages`.
+- The `t5-env-manifest.md` row for `Letta server` originally listed a single container; updated to reflect two per-agent Letta containers (same image/digest, different volumes + ports).
+- Pattern to take forward into v1: enforcing per-agent Letta is the structural fix. Inside a single Letta, MCP tool names from different servers collide via global `tool_id`. There is no per-MCP namespacing in Letta's current model. If we later need many agents on one Letta for resource reasons, this needs to be reopened upstream (Letta tool-id allocation per MCP-server scope).
 
 ## Run 2 — 4-agent main spike
 
