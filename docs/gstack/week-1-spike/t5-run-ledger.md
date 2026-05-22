@@ -41,7 +41,7 @@ Codex T4-D: without a frozen prompt + recorded version per run, the experiment i
 - **Run 1-bis on Letta Cloud API** (gates Run 2). Re-run the exact Run 1 workload (same prompts, same driver, same kickoff) but route inference through Letta Cloud's managed model handles (`letta/auto-chat`, `auto-memory`, `auto-fast` — exact selection TBD with founder) instead of `anthropic/*` via OpenRouter. Purpose: cost A/B against Run 1's $57.87 OpenRouter floor, and a side-channel signal on whether Letta's managed path enables the prompt-cache code path that the OpenAI-compatible OpenRouter route bypasses. **Note**: founder is researching the Letta-side caching scope independently (see [t5-run-1-conclusions.md](t5-run-1-conclusions.md) C-3 root cause) — the spike does not file upstream issues. Action: switch model handles in `wire-run-1.py`, swap `openrouter.local` for `letta-cloud.local`, re-run; lands as Run 1-bis row in the matrix above + the cost row in [t7-spike-cost.md](t7-spike-cost.md).
 - **Add default memory blocks to agent creation in `wire-run-1.py`.** Letta 0.16.8 no longer ships default `human` + `persona` blocks; `memory_insert(label="human", …)` errors with `Block field human does not exist (available sections = ())`. Run 2 agents (Analyst A + Analyst B in particular) will likely lean on memory blocks more than Run 1's EM did — file-backed notes are an OK fallback for one synthesis agent but get awkward across four. Action: extend the `POST /v1/agents/` payload in `wire-run-1.py` with an explicit `memory_blocks` list defining at least `human` and `persona`, OR call `POST /v1/agents/<id>/core-memory/blocks` after agent create. Verify by re-running the agent-driven probe and asserting `memory_insert` succeeds.
 - **Reconcile #team room membership before Run 2 reuses the same Nextcloud.** Run 1 removed `analyst-a` from `#team` (token `vzyiva4u`). For Run 2 add analyst-a back **and** add the new `analyst-b` user; verify all four agent actors are listed by `talk_list_participants(vzyiva4u)`. Same for the per-pair DM rooms (`EM-A`, `EM-B`, `A-B`, `A-Researcher`, `B-Researcher`).
-- **`spike-compose/driver.py` runtime files.** `driver.log` and `driver-state.local` accumulate per-run; truncate or rotate before Run 2 so the state file doesn't start tick 1 already-advanced past prior messages.
+- **`spike-compose/driver.py` runtime files.** `driver.log` and `driver-state.local` accumulate per-run; truncate or rotate before Run 2 so the state file doesn't start tick 1 already-advanced past prior messages. The driver also now honors `HARD_CAP_S` from env (default 3600), so time-boxed re-runs can override the 1h cap without editing the script.
 - **Pre-raise OpenRouter cap to $300** (or use a dedicated key) if Run 2 still routes through OpenRouter. Run 1 hit the original $50 cap mid-flight at 01:12:35 UTC; with 2× agents + likely longer wall-clock, $100 is too tight.
 
 ### Event log (Run 1)
@@ -69,6 +69,32 @@ Codex T4-D: without a frozen prompt + recorded version per run, the experiment i
 | 2026-05-22 01:16:02 UTC | operator | Posted "finalize" wake to EM: read msg 276 (Bundle A), capture to `_research-bundle-a.md`, integrate into §4 with new `[^A*]` footnotes, post `brief final` to `#team`. 317s response. |
 | 2026-05-22 01:21:10 UTC | em (agent) | `brief final` posted to `#team` as msg 279. `/agents/brief.md` grew to 34,465 bytes; added 14 `[^A*]` footnotes; "Macro setting" paragraph at top of §4 (World Bank IEP / e-Conomy SEA / APJII); FX figures corrected throughout to IDR 17,648 / 22-24% cumulative; "kill if IDR breaks 18,500" line added. |
 | 2026-05-22 01:21:56 UTC | operator | Driver stopped. Final artifacts pulled to `docs/gstack/week-1-spike/run1-artifacts/`. |
+
+## Run 1 state loss (post-mortem, 2026-05-22)
+
+**Symptom.** A day after Run 1 closed, bringing the stack back up showed `/v1/agents/` returning `[]` on both Letta containers — and the Letta web dashboard showing no agents. The Run 1 deliverables in `/agents/` (brief.md, outline, bundles A–F + follow-ups, audit log) were intact, but the agents themselves and their `messages` / `runs` / `steps` history were gone.
+
+**Root cause.** The `letta/letta:latest` image bundles postgres internally and stores all agent state (agents, messages, blocks, etc.) at `/var/lib/postgresql/data` inside the container. The original `docker-compose.yml` only mounted `letta_<role>_data:/root/.letta` — which holds the static bootstrap `[defaults]` config (`/root/.letta/config`) but **not** the database. So when `docker compose down` ran after Run 1, the postgres data dir went with the container's writable layer.
+
+The surviving `letta_<role>_data` volumes contain only:
+
+```
+config         # [defaults], [archival_storage], [metadata_storage], [version]
+agents/        # empty
+archival/      # empty
+functions/, humans/, personas/, presets/, settings/, system_prompts/  # all empty
+tool_execution_dir/  # transient sandbox scratch
+```
+
+No `.db` / `.sqlite` file anywhere — confirming the actual state lived inside the container layer, not in this volume.
+
+**What's lost.** Run 1's Letta-side trace: agent IDs (`agent-0a9bce41…` EM, `agent-b4a10f8f…` Researcher), message history, tool-call sequence, memory-block contents (none in Run 1 — see C-2), run/step timing metrics.
+
+**What's not lost.** All deliverables — they live in Nextcloud's `nc_data` volume, which **is** correctly mounted. The OpenRouter request/response export (`exports/run1-openrouter.csv`) and the system-prompt hashes (this file, Run 1 row) are also intact.
+
+**Fix.** Add a second mount per Letta container: `letta_<role>_pgdata:/var/lib/postgresql/data`. Plus the matching volume declarations. Verified post-fix by writing 4 runs / 33 messages / step + provider_trace rows into `letta_em_pgdata`, then `docker compose down` + `docker compose up -d`, then confirming `messages.count = 33` survived.
+
+**Run 2 implication.** Same mount applies to the commented-out `letta-analyst-a` + `letta-analyst-b` services. The compose file ships with `letta_analyst_a_pgdata` / `letta_analyst_b_pgdata` declarations commented alongside the existing `letta_analyst_a_data` / `letta_analyst_b_data` lines — uncomment both pairs when Run 2 wires up.
 
 ## Letta tool-namespace finding (pre-Run-1, 2026-05-22)
 

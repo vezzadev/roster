@@ -122,6 +122,12 @@ services:
       LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
     volumes:
       - letta_em_data:/root/.letta
+      # The Letta image bundles postgres internally and stores all agent state
+      # at /var/lib/postgresql/data. Without this mount, agent state is in the
+      # container's writable layer and dies on `docker compose down` — the
+      # /root/.letta mount only catches the bootstrap [defaults] config. See
+      # ../t5-run-ledger.md "Run 1 state loss" for the original incident.
+      - letta_em_pgdata:/var/lib/postgresql/data
       - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
     networks: [spike]
 
@@ -136,6 +142,7 @@ services:
       LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
     volumes:
       - letta_researcher_data:/root/.letta
+      - letta_researcher_pgdata:/var/lib/postgresql/data
       - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
     networks: [spike]
 
@@ -278,5 +285,9 @@ volumes:
   nc_db_data:
   letta_em_data:
   letta_researcher_data:
+  letta_em_pgdata:
+  letta_researcher_pgdata:
   # letta_analyst_a_data:  # Run 2
   # letta_analyst_b_data:  # Run 2
+  # letta_analyst_a_pgdata:  # Run 2
+  # letta_analyst_b_pgdata:  # Run 2
