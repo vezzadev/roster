@@ -1,0 +1,56 @@
+# Researcher web-fetch contamination blocklist.
+#
+# Source of truth: ../../t4-mcp-investigation.md "Researcher domain blocklist".
+# Keep these in sync if either side changes.
+#
+# Syntax:
+#   - Lines starting with # are comments.
+#   - Plain hostname (no slash, no asterisk) blocks that host + any subdomain.
+#     Example: bcg.com blocks bcg.com AND www.bcg.com AND web-assets.bcg.com.
+#   - Lines containing '/' or '*' are treated as patterns matched (case-insensitive
+#     substring with * → .*) against the full lowercased URL AND against host+path.
+#     Use this form for path-specific blocks (pwc.com/consulting) and archive
+#     mirrors (web.archive.org/web/*/bcg.com/*).
+#
+# Hostname blocks also become the excludeDomains array on every Firecrawl
+# /v2/search call — server.py reads BLOCK_HOSTS for that. Pattern entries are
+# enforced only on scrape (Firecrawl /search doesn't expose path patterns).
+
+# Hard block — consulting firm primary domains
+bcg.com
+bcghendersoninstitute.com
+mckinsey.com
+mckinseyandcompany.com
+bain.com
+rolandberger.com
+oliverwyman.com
+lek.com
+kearney.com
+monitordeloitte.com
+strategyand.pwc.com
+
+# Path-scoped consulting-firm blocks (the broader domain stays allowed)
+pwc.com/consulting
+deloitte.com/*/insights/strategy
+deloitte.com/*/insights/consulting
+
+# Archive / mirror patterns
+web.archive.org/web/*/bcg.com/*
+web.archive.org/web/*/mckinsey.com/*
+web.archive.org/web/*/bain.com/*
+web.archive.org/web/*/rolandberger.com/*
+web.archive.org/web/*/oliverwyman.com/*
+archive.today/*/bcg.com/*
+archive.today/*/mckinsey.com/*
+archive.today/*/bain.com/*
+slideshare.net/*/bcg-*
+slideshare.net/*/mckinsey-*
+slideshare.net/*/bain-*
+slideshare.net/*/boston-consulting-*
+slideshare.net/*/roland-berger-*
+scribd.com/*/bcg-*
+scribd.com/*/mckinsey-*
+scribd.com/*/bain-*
+documentcloud.org/*/bcg-*
+documentcloud.org/*/mckinsey-*
+documentcloud.org/*/bain-*

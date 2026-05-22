@@ -1,4 +1,5 @@
 .env
 squid/squid.conf
 squid/blocklist.txt
+researcher-web-mcp/audit/
 .playwright-cli/
