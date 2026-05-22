@@ -50,7 +50,7 @@ ROOMS = [
 ]
 
 POLL_INTERVAL_S = 30
-HARD_CAP_S = 3600  # 1h Run 1 cap
+HARD_CAP_S = int(os.environ.get("HARD_CAP_S", "3600"))  # 1h default; overridable for time-boxed re-runs
 
 
 def now() -> str:
