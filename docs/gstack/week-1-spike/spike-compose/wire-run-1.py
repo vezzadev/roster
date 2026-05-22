@@ -64,6 +64,60 @@ NEXTCLOUD_SPIKE_TOOLS = {
 # researcher-web wrapper tools (Firecrawl-backed, blocklist-enforced).
 RESEARCHER_WEB_TOOLS = {"web_search", "web_scrape"}
 
+# Seed memory blocks per role. Letta 0.16.8 no longer ships default `human` /
+# `persona` blocks; without these, `memory_insert(label="human", …)` errors
+# with `Block field human does not exist (available sections = ())` — see
+# ../t5-run-1-conclusions.md C-2 + ../t5-run-ledger.md "Memory blocks absent".
+# Kept terse on purpose: the system prompt is the immutable frame; these
+# blocks are working memory the agent can refine with memory_insert /
+# memory_replace as the engagement runs.
+MEMORY_BLOCKS = {
+    "em": [
+        {
+            "label": "persona",
+            "value": (
+                "I am the Engagement Manager. I coordinate the team, own "
+                "/agents/brief.md (the final deliverable), pace work toward "
+                "the deadline, and synthesize the Researcher's bundles into "
+                "the brief. I do not source web material myself."
+            ),
+            "description": "My own role, responsibilities, and how I operate.",
+        },
+        {
+            "label": "human",
+            "value": (
+                "The founder kicked off this engagement with "
+                "'Begin the engagement.' and may post mid-run nudges. I "
+                "communicate with the founder only via Talk rooms (#team) "
+                "and direct Letta wakes — never DM."
+            ),
+            "description": "Who I am working for and how they communicate with me.",
+        },
+    ],
+    "researcher": [
+        {
+            "label": "persona",
+            "value": (
+                "I am the Researcher. I source factual material via "
+                "web_search and web_scrape (Firecrawl-backed, blocklist "
+                "enforced) and write findings to /agents/_research-bundle-*.md "
+                "for the EM to synthesize. I do not draft the final brief."
+            ),
+            "description": "My own role, responsibilities, and how I operate.",
+        },
+        {
+            "label": "human",
+            "value": (
+                "I work under the Engagement Manager (EM). The EM directs "
+                "what to research, in what order, and when to stop. The "
+                "founder is upstream of the EM; I do not interact with the "
+                "founder directly."
+            ),
+            "description": "Who I am working for and how they communicate with me.",
+        },
+    ],
+}
+
 # Each role has its own Letta server URL + MCP sidecars. Each MCP is
 # (server_name, internal_server_url, expected_tool_subset). server_url is
 # resolved over the Docker `spike` network — Letta and the MCP run on the same
@@ -176,6 +230,7 @@ def main():
             "embedding": "letta/letta-free",
             "tool_ids": tool_ids,
             "include_base_tools": True,
+            "memory_blocks": MEMORY_BLOCKS[role["name"]],
         })
         agent_id = created["id"]
         agent_ids[role["name"]] = {"agent_id": agent_id, "letta_url": letta_url}

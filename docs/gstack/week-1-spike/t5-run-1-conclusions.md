@@ -60,6 +60,8 @@ The namespace collision is not a Letta misconfiguration — it is a property of 
 
 Empirical: `memory_insert(label="human")` errored with `Block field human does not exist (available sections = ())` on the EM agent. The agent fell back to file-backed notes in `/agents/_em-notes.md`. This worked for one synthesis agent over 50 min but will be friction-y across four agents over longer runs. Already captured as a Run 2 follow-up in [t5-run-ledger.md](t5-run-ledger.md) "Follow-ups before Run 2" → fix in `wire-run-1.py` to seed `human` + `persona` blocks (or whatever Letta 0.16.8's current canonical schema is) on agent create.
 
+**Update (Run 1-redo, 2026-05-22 15:45 UTC).** `wire-run-1.py` now seeds per-role `human` + `persona` memory blocks on agent create. Verified post-wire via `GET /v1/agents/<id>/core-memory/blocks`: both agents had both blocks attached. **But neither agent called `memory_insert` or `memory_replace` during the 15-min re-run** — character counts on both blocks matched the seed values exactly after the run ended. Two interpretations: (a) the re-run was dominated by the Talk-history reconstruction shortcut (see C-5) so the agents never had a steady-state period where memory writes would be useful, or (b) the system prompts don't sufficiently push the agents toward memory_insert as a tool of first resort for non-deliverable state. Re-validate with a genuinely-fresh Run 2 (no Talk-room history bleed) before drawing a firm conclusion.
+
 ### C-3. **Prompt caching is not happening anywhere — Letta's OpenAI-compatible path doesn't inject `cache_control` markers, and both models paid full uncached list price.**
 
 **Direct evidence (OpenRouter per-request data, queried via the logs page with workspace_id filter):**
@@ -125,6 +127,37 @@ Without the founder's pacing nudge at 01:08 UTC ("stop intake after Bundle A, st
 
 Pure "1h cap" was sufficient for Run 1 because the founder was operating the runtime live. For unattended v1 use, the EM prompt itself needs internal budget awareness, or Roster CLI needs to wake EM with these signals.
 
+### C-5. **Talk chat history is the deeper recovery surface — `/agents/` + Letta pgdata wipe is not a "clean re-run."**
+
+Found during the Run 1-redo on 2026-05-22 15:45 UTC after the pgdata-mount fix had landed (see [t5-run-ledger.md](t5-run-ledger.md) "Run 1 state loss" post-mortem). Goal of the re-run: a 15-min smoke against the post-fix compose to confirm state now persists across `docker compose down`, with memory blocks enabled. To get a "fresh" start, the re-run wiped:
+
+- `letta_em_pgdata` + `letta_researcher_pgdata` volumes (Letta-side agents + messages + memory blocks gone).
+- `/agents/*` in `nc_data` (brief.md, outline, all bundles, audit log, EM notes deleted).
+- Driver state file truncated.
+
+**What was *not* wiped: the Nextcloud Talk room message history.** The `EM-Researcher` DM (token `z4n3425w`) still carried 22 messages from Run 1 — the original Researcher bundles posted as chat. The `#team` room (token `vzyiva4u`) carried Run 1's kickoff + team-comp + brief-final.
+
+**What the agents did.** Within ~10 minutes the EM:
+
+1. Called `talk_get_messages` on both rooms; read the preserved Run 1 history.
+2. Reconstructed engagement state from that history without re-fetching any source.
+3. Produced a new `/agents/brief.md` (32.8 KB) and a new `/agents/_research-consolidated.md` (22 KB) that **explicitly** opened with the disclaimer:
+
+   > *"Reconstructed from chat history because prior session's files did not persist to disk."*
+
+4. Zero `web_search` or `web_scrape` calls during the re-run (verified against `researcher-web-mcp/audit/fetch.jsonl` — no rows appended after the run start).
+
+The agents correctly identified that the deliverables had been wiped, correctly chose to reconstruct rather than restart, and used a tool affordance (`talk_get_messages`) the system prompt does not explicitly suggest for recovery. This is good *agent* behavior — but for the purposes of validating the spike it means the re-run was **not a fresh run**; it was a recovery run.
+
+**Implications.**
+
+- **For Run 2 readiness gates (G-1…G-8 below):** add a new gate — **G-3.5: Talk room history must be truncated or rooms recreated before Run 2 boots**, otherwise Run 2's "fresh" 4-agent run inherits Run 1's research bundles via `talk_get_messages`. The pgdata + `/agents/` wipe alone is insufficient.
+- **For v1 design:** Talk chat history-as-substrate is a load-bearing property of the architecture, not just a delivery transport. Agents can and will use it to recover state across runtime resets. This is by design (Roster's whole premise is that Talk is the durable system of record), but it means any "reset to known-clean" workflow has to address the Talk side too — not just the agent runtime.
+- **For the [`vezzadev/letta-mcp-channel`](https://github.com/vezzadev/letta-mcp-channel) push-MCP-channel plugin:** the spike polling driver delivers digests of new messages; the v1 channel will surface chat history as MCP resources/notifications. Whatever shape it takes, the property "agents read Talk history on wake" is the design intent — the takeaway is that *the test harness*, not the runtime, has to assume responsibility for clean-state hygiene.
+- **For C-2 (memory blocks unused).** The Run 1-redo's failure to write to `human` / `persona` blocks is not evidence that the seeded blocks don't work — it's evidence that the re-run never reached a steady state where memory writes were useful. The agents were in recovery mode for the entire 15 min: read history → reconstruct → write deliverables → idle (the deadline was already past per the reconstructed timeline). Re-validate memory-block usage on Run 2 only.
+
+**Action.** Add Talk-room reset to the Run 2 prep checklist (G-3.5 in the table below). For Run 1-bis on Letta Cloud, the same applies — either truncate the rooms or use fresh room tokens.
+
 ## Cost — first OpenRouter trendline (and what it means for SC#6)
 
 **Direct datum (OpenRouter hourly export, 2026-05-22 00:00 and 01:00 UTC buckets — all Run 1 activity falls inside these two hours):**
@@ -185,6 +218,7 @@ What a grader could legitimately push on:
 | G-1 | No Analyst A / B agent in Run 1 | The analyst↔analyst↔researcher collaboration loop is the SC#5-critical interaction that 2-agent ablation cannot test | Run 2 wires A + B; observe whether DM rooms `A-B`, `A-Researcher`, `B-Researcher` actually carry work or sit unused |
 | G-2 | Memory blocks absent (C-2 above) | File-backed notes worked for 1 synthesis agent; 4 agents will hit name collisions / merge conflicts on `/agents/_*-notes.md` | Fix in `wire-run-1.py` before Run 2 boots; verify with agent-driven probe |
 | G-3 | `#team` analyst membership mid-run change | Run 1 removed analyst-a from `#team`; the room is currently `em + researcher + admin` (see room snapshot at run end) | Re-add analyst-a, add analyst-b, verify all 4 agents see all 4 as participants before kickoff |
+| G-3.5 | Talk room history bleeds across runs (C-5 above) | Run 1-redo showed agents reconstruct deliverables from preserved Talk history via `talk_get_messages`. Run 2 with the same room tokens inherits Run 1's research bundles + brief as substrate, contaminating the "fresh 4-agent run" surface | Truncate `#team`, `EM-Researcher`, `EM-A`, `EM-B`, `A-B`, `A-Researcher`, `B-Researcher` to zero messages **OR** delete and recreate the rooms with new tokens before Run 2 kickoff. Verify via `talk_get_messages(token)` returning `[]` for each room before driver start |
 | G-4 | Driver state file carries Run 1's last-seen IDs | Run 2 tick 1 would start advanced past pre-Run-1 history; if Run 2 reuses room tokens, EM will not be re-woken with msg 279 (Run 1's `brief final`) — that's actually the right behavior, but the driver state should be reset to zero so any kickoff messages get delivered cleanly | Truncate `driver-state.local`; rotate or archive `driver.log` |
 | G-5 | OpenRouter cap | Default $100 ate Run 1 with margin; Run 2 with 2× agents and longer wall-time will likely need $200+ | Pre-raise cap to $300 before Run 2 kickoff; or use a fresh dedicated key |
 | G-6 | Brief stored separately from t8-sample-brief.md | Run 1's brief is under `run1-artifacts/`; SC#5's referenced location is `t8-sample-brief.md` | Decision: keep Run 1 under run1-artifacts (it's not the SC#5 artifact); Run 2's brief lands in t8-sample-brief.md as planned |
