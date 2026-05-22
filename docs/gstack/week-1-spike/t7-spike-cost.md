@@ -20,14 +20,15 @@ OpenRouter is the inference routing layer in v1 (Anthropic models routed through
 
 | Date | Cumulative spend ($) | Δ vs prev day | Notes |
 |------|----------------------|----------------|-------|
-| _empty_ | | | |
+| 2026-05-22 | $57.87 | +$57.87 | Run 1 (EM + Researcher, ~50 min active). Hit the original $50 OpenRouter cap mid-run; founder raised to $100 and the run resumed. Raw OpenRouter export at [exports/run1-openrouter.csv](exports/run1-openrouter.csv). |
 
 ## Per-run cost
 
-| Run | Wall time | Input tokens | Output tokens | Cost ($) | Cost / output-token | Notes |
-|-----|-----------|--------------|----------------|----------|---------------------|-------|
-| Run 1 (2-agent smoke) | | | | | | 1h cap |
-| Run 2 (4-agent main)  | | | | | | |
+| Run | Wall time | Prompt tokens (input) | Completion tokens (output) | Reasoning tokens | Requests | Cost ($) | Notes |
+|-----|-----------|----------------------:|---------------------------:|-----------------:|---------:|---------:|-------|
+| Run 1 (2-agent smoke, EM + Researcher) | ~50 min active (00:31:23 → 01:21:10 UTC, incl. ~3-min OpenRouter-cap stall) | 16,055,531 | 149,802 | 691 | 223 | **$57.87** | Per-model split: Opus 4.7 (EM) $18.66 / 61 req / 3.4M prompt; Sonnet 4.6 (Researcher) $39.21 / 162 req / 12.6M prompt. **Sonnet/Researcher is the cost driver, not Opus/EM** (2.1× higher) — driven by request count × prompt-token re-read on every tool call. **Zero prompt caching on either model** — verified via OpenRouter per-request JSON (`native_tokens_cached: 0` across all sampled rows). Both Opus and Sonnet billed match list price to the cent at zero cache (Opus 4.7 at $5/M input / $25/M output; Sonnet 4.6 at $3/M / $15/M). Letta's `cache_control` injection lives only in its native Anthropic-client path, not the OpenAI-compatible OpenRouter path used here — see [t5-run-1-conclusions.md](t5-run-1-conclusions.md) C-3 for the root cause + Run 2 fix options. Full Cost section + 4-agent extrapolation in the same doc. |
+| Run 1-bis (2-agent cost A/B via Letta Cloud) | | | | | | | pending — same workload as Run 1 but inference via Letta Cloud's managed model handles (`auto-chat` / `auto-fast` / `auto-memory` — exact selection TBD with founder) instead of `anthropic/*` through OpenRouter. Capture: per-request cost from Letta Cloud's billing surface + cache-hit counters if exposed. Compares against Run 1's $57.87 OpenRouter floor on identical prompts and traffic shape |
+| Run 2 (4-agent main)  | | | | | | | pending |
 
 ## Trendline checks
 

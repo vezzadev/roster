@@ -12,8 +12,9 @@ Codex T4-D: without a frozen prompt + recorded version per run, the experiment i
 
 | Run # | Type | Agents | Time cap | Prompt hashes (EM / A / B / R) | Letta ver | Nextcloud ver | Model(s) | Started | Ended | Outcome |
 |-------|------|--------|----------|--------------------------------|-----------|---------------|----------|---------|-------|---------|
-| 1     | 2-agent smoke (ablation, post-swap) | EM + Researcher | 1h hard cap | | | | | | | |
-| 2     | 4-agent main spike | EM + A + B + Researcher | none (target same day) | | | | | | | |
+| 1     | 2-agent smoke (ablation, post-swap) | EM + Researcher | 1h hard cap | e966a65… / — / — / 2fff77b… | 0.16.8 (img `aa66c3eeee13`) | 30 | EM=`anthropic/claude-opus-4.7` via OpenRouter; Researcher=`anthropic/claude-sonnet-4.6` via OpenRouter | 2026-05-22 00:31:23 UTC | 2026-05-22 01:21:10 UTC | ✅ success — brief at `run1-artifacts/brief.md`; conclusions in [t5-run-1-conclusions.md](t5-run-1-conclusions.md) |
+| 1-bis | 2-agent cost A/B (planned) | EM + Researcher | 1h hard cap | same as Run 1 | same as Run 1 | same as Run 1 | EM=`letta/auto-chat` (or comparable); Researcher=`letta/auto-fast` (TBD with founder) — routed via Letta Cloud API instead of OpenRouter | | | pending — purpose: A/B per-request cost + prompt-cache hit rate vs Run 1's OpenRouter floor |
+| 2     | 4-agent main spike | EM + A + B + Researcher | none (target same day) | | | | | | | pending — gated on G-1…G-8 readiness list in [t5-run-1-conclusions.md](t5-run-1-conclusions.md) |
 
 ## Run 1 — 2-agent smoke (1h cap)
 
@@ -37,9 +38,11 @@ Codex T4-D: without a frozen prompt + recorded version per run, the experiment i
 
 ### Follow-ups before Run 2
 
+- **Run 1-bis on Letta Cloud API** (gates Run 2). Re-run the exact Run 1 workload (same prompts, same driver, same kickoff) but route inference through Letta Cloud's managed model handles (`letta/auto-chat`, `auto-memory`, `auto-fast` — exact selection TBD with founder) instead of `anthropic/*` via OpenRouter. Purpose: cost A/B against Run 1's $57.87 OpenRouter floor, and a side-channel signal on whether Letta's managed path enables the prompt-cache code path that the OpenAI-compatible OpenRouter route bypasses. **Note**: founder is researching the Letta-side caching scope independently (see [t5-run-1-conclusions.md](t5-run-1-conclusions.md) C-3 root cause) — the spike does not file upstream issues. Action: switch model handles in `wire-run-1.py`, swap `openrouter.local` for `letta-cloud.local`, re-run; lands as Run 1-bis row in the matrix above + the cost row in [t7-spike-cost.md](t7-spike-cost.md).
 - **Add default memory blocks to agent creation in `wire-run-1.py`.** Letta 0.16.8 no longer ships default `human` + `persona` blocks; `memory_insert(label="human", …)` errors with `Block field human does not exist (available sections = ())`. Run 2 agents (Analyst A + Analyst B in particular) will likely lean on memory blocks more than Run 1's EM did — file-backed notes are an OK fallback for one synthesis agent but get awkward across four. Action: extend the `POST /v1/agents/` payload in `wire-run-1.py` with an explicit `memory_blocks` list defining at least `human` and `persona`, OR call `POST /v1/agents/<id>/core-memory/blocks` after agent create. Verify by re-running the agent-driven probe and asserting `memory_insert` succeeds.
 - **Reconcile #team room membership before Run 2 reuses the same Nextcloud.** Run 1 removed `analyst-a` from `#team` (token `vzyiva4u`). For Run 2 add analyst-a back **and** add the new `analyst-b` user; verify all four agent actors are listed by `talk_list_participants(vzyiva4u)`. Same for the per-pair DM rooms (`EM-A`, `EM-B`, `A-B`, `A-Researcher`, `B-Researcher`).
 - **`spike-compose/driver.py` runtime files.** `driver.log` and `driver-state.local` accumulate per-run; truncate or rotate before Run 2 so the state file doesn't start tick 1 already-advanced past prior messages.
+- **Pre-raise OpenRouter cap to $300** (or use a dedicated key) if Run 2 still routes through OpenRouter. Run 1 hit the original $50 cap mid-flight at 01:12:35 UTC; with 2× agents + likely longer wall-clock, $100 is too tight.
 
 ### Event log (Run 1)
 
