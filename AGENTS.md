@@ -81,6 +81,26 @@ For any HTTP components, worktree-based port mapping:
 
 Set via `PORT` environment variable.
 
+## LLM observability
+
+Raw LLM call inputs, outputs, and costs are logged to an Azure Log Analytics
+workspace (table `OpenRouter_CL`):
+
+```
+/subscriptions/07aba226-fd59-489a-b07b-4158fef12a5d/resourceGroups/rg-openrouter-swec-01/providers/Microsoft.OperationalInsights/workspaces/la-openrouter-swec-01
+```
+
+Query via `az cli` (workspace customer ID `0e1dc4da-9ef1-4e44-9fd5-d9d5a97ecb91`):
+
+```bash
+az monitor log-analytics query \
+  --workspace 0e1dc4da-9ef1-4e44-9fd5-d9d5a97ecb91 \
+  --analytics-query "OpenRouter_CL | where TimeGenerated > ago(1d) | summarize sum(Cost)"
+```
+
+Use it for cost attribution, debugging prompt/response payloads, and latency
+analysis. Per-call records include the full request and response bodies.
+
 ## Skill routing
 
 When the user's request matches an available skill, invoke it via the Skill tool. When in doubt, invoke the skill.
