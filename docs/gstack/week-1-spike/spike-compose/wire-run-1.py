@@ -1,39 +1,40 @@
-"""Wire Run 1 agents (EM + Researcher) into Letta.
+"""Wire Run 1 agents (EM + Researcher) into per-agent Letta containers.
 
 Run 1 is the 2-agent ablation. Per the swap recorded in t5-system-prompts.md
-Change log, the smoke uses EM + Researcher (not the original EM + Analyst A
-pairing) so the web-fetch path + contamination guard get live exercise before
-Run 2 brings in the full 4-agent team.
+Change log, the smoke uses EM + Researcher so the web-fetch path + contamination
+guard get live exercise before Run 2 brings in the full 4-agent team.
 
-Pre-boot gates (any failure halts before agent create):
+Architecture: one Letta container per agent (see ../t5-run-ledger.md "Letta
+tool-namespace finding"). A singleton Letta dedupes MCP tools by name across
+its registered MCP servers — so two per-agent MCP sidecars exposing the same
+`talk_send_message` collapse onto a single tool binding pointing at whichever
+MCP was registered last, breaking identity isolation. The fix is structural:
+one Letta per agent, with the agent's MCP sidecars registered only on that
+Letta. Each Letta only knows about its own MCPs, so tool names never collide.
+
+Pre-create gates (any failure halts before agent create):
   1. SHA-256 of each prompt body (fenced-block contents) matches the value
      recorded in t5-system-prompts.md.
   2. Banned-token grep over each prompt body returns 0 hits.
 
 Then for each of EM + Researcher:
-  - Resolve the agent's MCP servers by server_name (registered earlier via
-    docker compose + Letta /v1/mcp-servers/ POST).
-  - Filter each server's tools to the subset that role needs.
-  - POST /v1/agents/ with name + system + model + tool_ids.
+  - Register the role's MCP sidecars with the role's Letta (idempotent —
+    skips if a server with that server_name already exists).
+  - Resolve the tool IDs Letta now exposes for each sidecar, filter to the
+    expected subset.
+  - POST /v1/agents/ with name + system + model + tool_ids on the role's Letta.
 
-Writes the resulting agent IDs to ./run1-agents.local (gitignored).
-
-Idempotency: this script is intended to be run once per Run 1 boot. If an
-agent already exists with the same name, the new create will succeed and
-produce a duplicate — that's fine for the spike (Letta picks the most-recent
-one when you message by ID, and the script writes the new ID either way).
+Writes the resulting (agent_id, letta_url) pairs to ./run1-agents.local
+(gitignored).
 """
 
 import hashlib
 import json
-import os
 import pathlib
 import re
-import sys
 import urllib.request
 
 PROMPTS_PATH = pathlib.Path(__file__).resolve().parents[1] / "t5-system-prompts.md"
-LETTA_URL = "http://127.0.0.1:8283"
 LETTA_TOKEN = pathlib.Path(__file__).parent.joinpath("letta.local").read_text().strip()
 
 EXPECTED_HASHES = {
@@ -50,9 +51,7 @@ BANNED_TOKENS = [
     "changing your orbit", "foreign e-tailers", "ahead of the curve",
 ]
 
-# Talk + Files tools the spike needs from each nextcloud-mcp container. Agents
-# don't need the other 119 tools (calendar, contacts, cookbook, news, tables,
-# deck, etc.) — keeping the attached set tight reduces context bloat.
+# Talk + Files tools the spike needs from each nextcloud-mcp container.
 NEXTCLOUD_SPIKE_TOOLS = {
     "talk_list_conversations", "talk_get_conversation", "talk_get_messages",
     "talk_send_message", "talk_list_participants", "talk_mark_as_read",
@@ -65,31 +64,36 @@ NEXTCLOUD_SPIKE_TOOLS = {
 # researcher-web wrapper tools (Firecrawl-backed, blocklist-enforced).
 RESEARCHER_WEB_TOOLS = {"web_search", "web_scrape"}
 
-# Each role lists (mcp_server_name, expected_tool_subset) pairs. Server names
-# are resolved to IDs at runtime via /v1/mcp-servers/ to avoid hardcoding IDs
-# that change every time docker compose down/up cycles the MCP containers.
+# Each role has its own Letta server URL + MCP sidecars. Each MCP is
+# (server_name, internal_server_url, expected_tool_subset). server_url is
+# resolved over the Docker `spike` network — Letta and the MCP run on the same
+# bridge so the hostname resolves to the sidecar's container IP.
 ROLES = [
     {
         "title": "Engagement Manager (EM)",
         "name": "em",
         "model": "openrouter/anthropic/claude-opus-4.7",
-        "mcps": [("nextcloud-em", NEXTCLOUD_SPIKE_TOOLS)],
+        "letta_url": "http://127.0.0.1:8283",
+        "mcps": [
+            ("nextcloud-em", "http://nextcloud-mcp-em:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
+        ],
     },
     {
         "title": "Researcher",
         "name": "researcher",
         "model": "openrouter/anthropic/claude-sonnet-4.6",
+        "letta_url": "http://127.0.0.1:8284",
         "mcps": [
-            ("nextcloud-researcher", NEXTCLOUD_SPIKE_TOOLS),
-            ("researcher-web", RESEARCHER_WEB_TOOLS),
+            ("nextcloud-researcher", "http://nextcloud-mcp-researcher:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
+            ("researcher-web", "http://researcher-web-mcp:8000/mcp", RESEARCHER_WEB_TOOLS),
         ],
     },
 ]
 
 
-def http(method: str, path: str, body=None):
+def http(letta_url: str, method: str, path: str, body=None):
     req = urllib.request.Request(
-        f"{LETTA_URL}{path}",
+        f"{letta_url}{path}",
         data=json.dumps(body).encode() if body is not None else None,
         headers={
             "Authorization": f"Bearer {LETTA_TOKEN}",
@@ -118,11 +122,6 @@ def gate_hash(role_title: str, body: str) -> None:
 
 
 def gate_banned_tokens(role_title: str, body: str) -> None:
-    # Word-boundary regex (case-insensitive) so "bain" doesn't match "Bahrain"
-    # and "bcg" doesn't match a hypothetical word containing the trigram.
-    # `re.escape` neutralizes the regex metacharacter in tokens like
-    # "strategy&" and "l.e.k.". `(?:^|\W)…(?:\W|$)` is the word-boundary form
-    # that works for tokens ending in non-word characters (\b doesn't).
     hits = []
     for tok in BANNED_TOKENS:
         pattern = rf"(?:^|\W){re.escape(tok)}(?:\W|$)"
@@ -133,12 +132,17 @@ def gate_banned_tokens(role_title: str, body: str) -> None:
     print(f"  banned-token grep (word-boundary): 0 hits across {len(BANNED_TOKENS)} tokens")
 
 
-def resolve_mcp_server_id(name: str) -> str:
-    servers = http("GET", "/v1/mcp-servers/?limit=100")
-    for s in servers:
-        if s.get("server_name") == name:
+def register_mcp_idempotent(letta_url: str, server_name: str, server_url: str) -> str:
+    """Return the MCP server's id on this Letta, registering it if absent."""
+    existing = http(letta_url, "GET", "/v1/mcp-servers/?limit=100")
+    for s in existing:
+        if s.get("server_name") == server_name:
             return s["id"]
-    raise SystemExit(f"  MCP server not registered with Letta: {name!r}")
+    created = http(letta_url, "POST", "/v1/mcp-servers/", {
+        "server_name": server_name,
+        "config": {"mcp_server_type": "streamable_http", "server_url": server_url},
+    })
+    return created["id"]
 
 
 def main():
@@ -147,16 +151,17 @@ def main():
 
     for role in ROLES:
         title = role["title"]
-        print(f"\n=== {title} ===")
+        letta_url = role["letta_url"]
+        print(f"\n=== {title}  (letta @ {letta_url}) ===")
         body = extract_prompt(prompts_text, title)
 
         gate_hash(title, body)
         gate_banned_tokens(title, body)
 
         tool_ids: list[str] = []
-        for server_name, expected_tools in role["mcps"]:
-            server_id = resolve_mcp_server_id(server_name)
-            tools = http("GET", f"/v1/mcp-servers/{server_id}/tools")
+        for server_name, server_url, expected_tools in role["mcps"]:
+            mcp_id = register_mcp_idempotent(letta_url, server_name, server_url)
+            tools = http(letta_url, "GET", f"/v1/mcp-servers/{mcp_id}/tools")
             ids_for_server = [t["id"] for t in tools if t["name"] in expected_tools]
             missing = expected_tools - {t["name"] for t in tools}
             if missing:
@@ -164,7 +169,7 @@ def main():
             print(f"  {server_name}: attached {len(ids_for_server)} of {len(expected_tools)} expected (server has {len(tools)} total)")
             tool_ids.extend(ids_for_server)
 
-        created = http("POST", "/v1/agents/", {
+        created = http(letta_url, "POST", "/v1/agents/", {
             "name": role["name"],
             "system": body,
             "model": role["model"],
@@ -173,7 +178,7 @@ def main():
             "include_base_tools": True,
         })
         agent_id = created["id"]
-        agent_ids[role["name"]] = agent_id
+        agent_ids[role["name"]] = {"agent_id": agent_id, "letta_url": letta_url}
         print(f"  agent created: {agent_id} ({len(tool_ids)} MCP tools + Letta base)")
 
     out = pathlib.Path(__file__).parent / "run1-agents.local"

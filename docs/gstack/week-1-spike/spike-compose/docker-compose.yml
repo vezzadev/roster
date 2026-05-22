@@ -92,41 +92,96 @@ services:
       - nc_data:/var/www/html
     networks: [spike]
 
-  letta:
-    # Verify tag against https://docs.letta.com/ at bring-up; pin a digest
-    # in ../t5-env-manifest.md before declaring the run frozen.
+  # One Letta container per agent — discovered pre-Run-1 (see ../t5-run-ledger.md
+  # "Letta tool-namespace finding") that Letta dedupes MCP tools by name globally
+  # within a single Letta instance, so a singleton Letta with multiple per-agent
+  # MCPs collapses `talk_send_message` (and every other duplicate-named tool)
+  # onto a single binding that points at the most-recently-registered MCP,
+  # silently breaking identity isolation. Per-Letta-per-agent eliminates the
+  # collision at the architecture level: each Letta only registers its agent's
+  # own MCPs, so no two MCPs ever expose the same tool name to the same Letta.
+  #
+  # Each Letta is named `letta-<role>`; the operator interacts with it on a
+  # dedicated host port (8283 + role offset). The internal port stays 8283 in
+  # every container. The shared `letta_<role>_data` volume holds that Letta's
+  # sqlite agent state. Every Letta also bind-mounts the same SSRF patch.
+  #
+  # OPENROUTER_API_KEY and LETTA_SERVER_PASSWORD are sourced from the gitignored
+  # ./openrouter.local and ./letta.local files by ./bring-up.sh. The same
+  # password is shared across all Letta instances — they don't share state, just
+  # the operator credential.
+
+  letta-em:
     image: letta/letta:latest
     restart: unless-stopped
     ports:
       - "127.0.0.1:8283:8283"
     environment:
-      # OPENROUTER_API_KEY and LETTA_SERVER_PASSWORD are sourced from the
-      # gitignored ./openrouter.local and ./letta.local files by
-      # ./bring-up.sh (see that script and ./README.md). They never live
-      # in .env or in committed files.
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?run ./bring-up.sh — sources ./openrouter.local}
       SECURE: "true"
       LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
     volumes:
-      - letta_data:/root/.letta
-      # Spike-only: Letta's stock url_validation rejects private-IP MCP URLs as
-      # SSRF; we run MCP in the same Docker bridge, so we bind-mount a
-      # permissive replacement. See ./letta-patches/url_validation.py header.
+      - letta_em_data:/root/.letta
       - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
     networks: [spike]
 
-  # One nextcloud-mcp container per agent identity. The cbcoutinho image
-  # (AGPL-3.0, adopted per ../t4-mcp-investigation.md "Decision") authenticates
-  # as a single Nextcloud user via NEXTCLOUD_USERNAME + NEXTCLOUD_PASSWORD env
-  # — so isolating one container per agent prevents the MCP from being used
-  # to impersonate the wrong agent. Each container's app token is sourced
-  # from a gitignored ./<role>-token.local by ./bring-up.sh; if the token
-  # file is missing the service fails fast for that agent only.
-  # Transport: streamable_http on :8000/mcp (the only HTTP transport this
-  # image supports; SSE was deprecated upstream). Bare port not exposed to
-  # the host — Letta reaches each instance over the internal `spike` network.
+  letta-researcher:
+    image: letta/letta:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8284:8283"
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?run ./bring-up.sh — sources ./openrouter.local}
+      SECURE: "true"
+      LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
+    volumes:
+      - letta_researcher_data:/root/.letta
+      - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
+    networks: [spike]
 
-  nextcloud-mcp-em:
+  # ─── Run 2 only — uncomment alongside the matching nextcloud-mcp-<role> sidecars
+  #
+  # letta-analyst-a:
+  #   image: letta/letta:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - "127.0.0.1:8285:8283"
+  #   environment:
+  #     OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?run ./bring-up.sh — sources ./openrouter.local}
+  #     SECURE: "true"
+  #     LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
+  #   volumes:
+  #     - letta_analyst_a_data:/root/.letta
+  #     - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
+  #   networks: [spike]
+  #
+  # letta-analyst-b:
+  #   image: letta/letta:latest
+  #   restart: unless-stopped
+  #   ports:
+  #     - "127.0.0.1:8286:8283"
+  #   environment:
+  #     OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?run ./bring-up.sh — sources ./openrouter.local}
+  #     SECURE: "true"
+  #     LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
+  #   volumes:
+  #     - letta_analyst_b_data:/root/.letta
+  #     - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
+  #   networks: [spike]
+
+  # MCP sidecars. The cbcoutinho image (AGPL-3.0, per ../t4-mcp-investigation.md
+  # "Decision") authenticates as a single Nextcloud user via NEXTCLOUD_USERNAME +
+  # NEXTCLOUD_PASSWORD env. Each MCP container is the sidecar for exactly one
+  # Letta — the matching letta-<role> container above. The MCP is reachable on
+  # the internal `spike` network and is registered only with its paired Letta;
+  # no other Letta sees its tools, which is what makes identity isolation work.
+  # The app token for each user is sourced from a gitignored ./<role>-token.local
+  # by ./bring-up.sh; if the token file is missing the MCP fails fast for that
+  # role only.
+  # Transport: streamable_http on :8000/mcp (only HTTP transport this image
+  # supports; SSE was deprecated upstream). Port not exposed to the host.
+
+  nextcloud-mcp-em:  # sidecar to letta-em
     image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
     restart: unless-stopped
     depends_on: [nextcloud]
@@ -136,7 +191,7 @@ services:
       NEXTCLOUD_PASSWORD: ${EM_APP_TOKEN:?run ./bring-up.sh — sources ./em-token.local}
     networks: [spike]
 
-  nextcloud-mcp-analyst-a:
+  nextcloud-mcp-analyst-a:  # sidecar to letta-analyst-a (Run 2)
     image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
     restart: unless-stopped
     depends_on: [nextcloud]
@@ -157,7 +212,7 @@ services:
   # blocklist.txt is checked-in (committed-in-repo source of truth alongside
   # t4). audit/fetch.jsonl is gitignored — that's the per-run trail copied to
   # ../t5-researcher-urls.md after Run 2.
-  researcher-web-mcp:
+  researcher-web-mcp:  # sidecar to letta-researcher
     build: ./researcher-web-mcp
     restart: unless-stopped
     environment:
@@ -169,9 +224,9 @@ services:
       - ./researcher-web-mcp/audit:/var/log/researcher-web
     networks: [spike]
 
-  # Researcher MCP: live from Run 1 (post-swap). Researcher agent attaches both
-  # this nextcloud-mcp instance and the researcher-web wrapper above.
-  nextcloud-mcp-researcher:
+  # Researcher MCP: live from Run 1 (post-swap). letta-researcher attaches both
+  # this nextcloud-mcp sidecar and the researcher-web wrapper above.
+  nextcloud-mcp-researcher:  # sidecar to letta-researcher
     image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
     restart: unless-stopped
     depends_on: [nextcloud]
@@ -221,4 +276,7 @@ networks:
 volumes:
   nc_data:
   nc_db_data:
-  letta_data:
+  letta_em_data:
+  letta_researcher_data:
+  # letta_analyst_a_data:  # Run 2
+  # letta_analyst_b_data:  # Run 2
