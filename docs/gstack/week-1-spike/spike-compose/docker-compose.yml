@@ -12,28 +12,35 @@
 #      → wait ~30s for Nextcloud first-run init
 #   3. docker compose exec --user www-data nextcloud php occ app:install spreed
 #   4. In the Nextcloud admin UI (http://localhost:8080), create users:
-#        em, analyst-a                       (Run 1 + Run 2)
-#        analyst-b, researcher               (Run 2 only)
+#        em, researcher                     (Run 1 — post-swap pairing)
+#        analyst-a, analyst-b               (Run 2 adds these two)
 #      Generate one app-password per user.
 #   5. Create folders /agents/ and /founder/. Set ACLs per
 #      ../t4-mcp-investigation.md "Network and ACL policy":
-#        /agents/   read+write to all four agent users
+#        /agents/   read+write to all present agent users
 #        /founder/  read+write to admin/founder only; invisible to agents
 #      Verify by logging in as each agent user — /founder/ must not appear.
 #   6. Create Talk rooms per ../t5-system-prompts.md:
-#        #team    (all present agents)
-#        EM-A     (em + analyst-a)                            (Run 1 + Run 2)
-#        EM-B, EM-Researcher, A-B, A-Researcher, B-Researcher (Run 2 only)
-#   7. docker compose up -d letta nextcloud-mcp
+#        #team           (all present agents)
+#        EM-Researcher   (em + researcher)                       (Run 1)
+#        EM-A, EM-B, A-B, A-Researcher, B-Researcher             (Run 2 adds these)
+#   7. docker compose up -d letta nextcloud-mcp-em \
+#                            nextcloud-mcp-researcher researcher-web-mcp
 #   8. Wire each Letta agent to its frozen prompt from
-#      ../t5-system-prompts.md. Re-verify SHA-256 hashes per the Hash
-#      protocol in that file. Re-run the banned-token grep (0 hits).
-#      Both gates → record in ../t5-run-ledger.md "Prompts frozen at hash".
+#      ../t5-system-prompts.md via spike-compose/wire-run-1.py. The script's
+#      pre-create gates re-verify SHA-256 hashes against the Hash protocol
+#      in that file and re-run the banned-token grep (0 hits). Both gates →
+#      record in ../t5-run-ledger.md "Prompts frozen at hash".
 #   9. Capture container digests into ../t5-env-manifest.md Run N row:
 #        docker compose images
-#   10. Boot agents → Run 1 (1h hard cap). For Run 2: uncomment the
-#       squid service below, write ./squid/squid.conf + ./squid/blocklist.txt,
-#       run the four `curl -x` verification checks from t4, then boot.
+#   10. spike-compose/probe-tools.py runs an identity-isolated tool-exec
+#       probe per agent (talk_send_message + nc_webdav_write_file). All
+#       probes must pass before the kickoff message goes out.
+#   11. Boot agents → Run 1 (1h hard cap). For Run 2: uncomment the
+#       nextcloud-mcp-analyst-b service below, repeat steps 4-8 for the
+#       additional users + agents, and the Squid proxy stays optional
+#       (the researcher-web wrapper already enforces the contamination
+#       blocklist on the only web-fetch surface).
 
 services:
   nc-db:
@@ -162,8 +169,20 @@ services:
       - ./researcher-web-mcp/audit:/var/log/researcher-web
     networks: [spike]
 
-  # ─── Run 2 only — bring up after analyst-b + researcher exist in Nextcloud
-  # and their app tokens are stashed in ./analyst-b-token.local / ./researcher-token.local
+  # Researcher MCP: live from Run 1 (post-swap). Researcher agent attaches both
+  # this nextcloud-mcp instance and the researcher-web wrapper above.
+  nextcloud-mcp-researcher:
+    image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
+    restart: unless-stopped
+    depends_on: [nextcloud]
+    environment:
+      NEXTCLOUD_HOST: http://nextcloud
+      NEXTCLOUD_USERNAME: researcher
+      NEXTCLOUD_PASSWORD: ${RESEARCHER_APP_TOKEN:?run ./bring-up.sh — sources ./researcher-token.local}
+    networks: [spike]
+
+  # ─── Run 2 only — bring up after analyst-b exists in Nextcloud
+  # and the app token is stashed in ./analyst-b-token.local
   #
   # nextcloud-mcp-analyst-b:
   #   image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
@@ -173,16 +192,6 @@ services:
   #     NEXTCLOUD_HOST: http://nextcloud
   #     NEXTCLOUD_USERNAME: analyst-b
   #     NEXTCLOUD_PASSWORD: ${ANALYST_B_APP_TOKEN:?run ./bring-up.sh — sources ./analyst-b-token.local}
-  #   networks: [spike]
-  #
-  # nextcloud-mcp-researcher:
-  #   image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
-  #   restart: unless-stopped
-  #   depends_on: [nextcloud]
-  #   environment:
-  #     NEXTCLOUD_HOST: http://nextcloud
-  #     NEXTCLOUD_USERNAME: researcher
-  #     NEXTCLOUD_PASSWORD: ${RESEARCHER_APP_TOKEN:?run ./bring-up.sh — sources ./researcher-token.local}
   #   networks: [spike]
 
   # ─── Run 2 only — uncomment + verify before booting Run 2 ────────────────

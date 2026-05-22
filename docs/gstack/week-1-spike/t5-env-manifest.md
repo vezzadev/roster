@@ -83,7 +83,9 @@ OpenRouter pricing carries a markup over direct Anthropic — revisit SC#6 ($200
 | Nextcloud Redis | `redis:7-alpine` | `sha256:6ab0b6e7381779332f97b8ca76193e45b0756f38d4c0dcda72dbb3c32061ab99` | session + lock cache |
 | Letta server | `letta/letta:latest` | `sha256:aa66c3eeee13d2dfc40c650d709b550237ee31bfc91942a52fa488a13fa8c102` | v0.16.8; private-IP SSRF guard patched via bind-mount of `spike-compose/letta-patches/url_validation.py` |
 | MCP (em) | `ghcr.io/cbcoutinho/nextcloud-mcp-server:latest` | `sha256:2056bb4cb8ca6674bb229fac24e904b39d098d1cf28622c7e00217108024929d` | v1.27.0; auth scoped to em via `NEXTCLOUD_USERNAME=em` |
-| MCP (analyst-a) | `ghcr.io/cbcoutinho/nextcloud-mcp-server:latest` | `sha256:2056bb4cb8ca6674bb229fac24e904b39d098d1cf28622c7e00217108024929d` | same image; auth scoped to analyst-a |
+| MCP (researcher) | `ghcr.io/cbcoutinho/nextcloud-mcp-server:latest` | `sha256:2056bb4cb8ca6674bb229fac24e904b39d098d1cf28622c7e00217108024929d` | same image; auth scoped to researcher (Run 1 pairing — post-swap from analyst-a) |
+| MCP (researcher-web wrapper) | `spike-compose-researcher-web-mcp:latest` (locally built) | `sha256:cbebd3ca011e99590b4728dafc6dee60bd9c53b84fc7420146494faebd8b31a9` | Firecrawl-backed `web_search` + `web_scrape` with the contamination blocklist enforced server-side |
+| MCP (analyst-a) | `ghcr.io/cbcoutinho/nextcloud-mcp-server:latest` | `sha256:2056bb4cb8ca6674bb229fac24e904b39d098d1cf28622c7e00217108024929d` | still running but unused in Run 1 post-swap; will be used in Run 2 |
 
 #### Letta config
 
@@ -97,22 +99,28 @@ OpenRouter pricing carries a markup over direct Anthropic — revisit SC#6 ($200
 - Version: 30.0.17.2
 - Apps enabled: Talk (spreed 20.1.11), Files (built-in), Notes/Tables/Deck (built-in)
 - Storage backend: Nextcloud default (sqlite metadata + local files on `nc_data` Docker volume)
-- Users: admin, em, analyst-a (Run 2 will add analyst-b, researcher)
-- Folders: `/agents/` (rw shared with em + analyst-a, share IDs 1+2), `/founder/` (admin-only; verified invisible from agent accounts via PROPFIND)
-- Talk rooms: `team` (token `vzyiva4u`, type=2), `EM-A` (token `eg72sheb`, type=2)
+- Users: admin, em, analyst-a, researcher (Run 2 will add analyst-b)
+- Folders: `/agents/` (rw shared with em + analyst-a + researcher, share IDs 1+2+3), `/founder/` (admin-only; verified invisible from agent accounts via PROPFIND)
+- Talk rooms: `team` (token `vzyiva4u`, type=2; members em + analyst-a + researcher), `EM-A` (token `eg72sheb`, type=2), `EM-Researcher` (token `z4n3425w`, type=2)
 
 #### Models
 
 | Agent | Letta handle | Model |
 |-------|--------------|-------|
-| em (agent-51e9d3e6) | `openrouter/anthropic/claude-opus-4.7` | Claude Opus 4.7 via OpenRouter |
-| analyst-a (agent-5b04211a) | `openrouter/anthropic/claude-sonnet-4.6` | Claude Sonnet 4.6 via OpenRouter |
+| em (agent-414ea769) | `openrouter/anthropic/claude-opus-4.7` | Claude Opus 4.7 via OpenRouter |
+| researcher (agent-92367e4d) | `openrouter/anthropic/claude-sonnet-4.6` | Claude Sonnet 4.6 via OpenRouter |
 
 #### MCP server(s)
 
 - Source: `ghcr.io/cbcoutinho/nextcloud-mcp-server:latest` (v1.27.0). One container per agent identity for hard-isolation (cannot impersonate the wrong agent).
-- Endpoints exposed: 134 tools per server; the spike attaches only 15 (Talk send/list/get-messages/get-conv/list-participants/mark-as-read + WebDAV read/write/list/find/search/create/delete/copy/move) — see `spike-compose/wire-run-1.py` `SPIKE_TOOLS` for the canonical set.
-- Letta MCP server IDs: `mcp_server-db172699-cf6e-4baf-9538-6ff9b3e6d471` (em), `mcp_server-a7916894-3272-41d4-959b-9078d13b5cdb` (analyst-a)
+- Endpoints exposed: 134 tools per server; the spike attaches only 15 (Talk send/list/get-messages/get-conv/list-participants/mark-as-read + WebDAV read/write/list/find/search/create/delete/copy/move) — see `spike-compose/wire-run-1.py` `NEXTCLOUD_SPIKE_TOOLS` for the canonical set.
+- Researcher additionally attaches 2 tools from the `researcher-web` wrapper (`web_search`, `web_scrape`).
+- Letta MCP server IDs:
+  - `nextcloud-em` = `mcp_server-db172699-cf6e-4baf-9538-6ff9b3e6d471`
+  - `nextcloud-researcher` = `mcp_server-375467fc-e38b-4a44-8a7a-e44c2dbfd4a4`
+  - `researcher-web` = `mcp_server-cfebe094-013e-4ba3-a244-6c77f56d5c59`
+  - `nextcloud-analyst-a` = `mcp_server-a7916894-3272-41d4-959b-9078d13b5cdb` (registered, unused in Run 1)
+- `wire-run-1.py` and `probe-tools.py` resolve these by `server_name` at runtime so the IDs are not hard-coded.
 
 ## Change log
 
@@ -120,3 +128,4 @@ OpenRouter pricing carries a markup over direct Anthropic — revisit SC#6 ($200
 |-----|-----------|--------|--------|
 | Pre-Run 1 | Letta | Bind-mounted `url_validation.py` patch to bypass private-IP SSRF guard | Stock validator rejected `http://nextcloud-mcp-em:8000` because the Docker bridge resolves to 172.x — Letta has no env to disable. Patch keeps blocked-hostname checks; only the IP-globality check is bypassed. TODO: upstream a trusted-hosts env. |
 | Pre-Run 2 (built pre-Run 1) | new service `researcher-web-mcp` | Added FastMCP wrapper around Firecrawl SaaS exposing `web_search` + `web_scrape`. Image `spike-compose-researcher-web-mcp:latest` `sha256:cbebd3ca011e99590b4728dafc6dee60bd9c53b84fc7420146494faebd8b31a9` (locally built; not pushed). Letta MCP server `mcp_server-cfebe094-013e-4ba3-a244-6c77f56d5c59` server_name=`researcher-web`. | Firecrawl `/v2/scrape` exposes no `excludeDomains` parameter (only `/v2/search` does), so giving the Researcher raw firecrawl-mcp tools would bypass the consulting-firm blocklist on the dominant op. Wrapper enforces `blocklist.txt` server-side. End-to-end verified: Letta tool-run for `web_scrape("https://www.bcg.com/")` returns `blocked_by_contamination_guard` rule `host:bcg.com` with no network egress; `web_search` round-trips to Firecrawl with `excludeDomains` populated. |
+| Pre-Run 1 (post-swap) | Run 1 pairing changed | Run 1 swapped from EM+Analyst A to EM+Researcher. Provisioned Nextcloud user `researcher` with sentinel pw `researcher-pw-smoke` (rotate before any non-spike use) + an app token stored in the gitignored `spike-compose/researcher-token.local`. Brought up `nextcloud-mcp-researcher` (Letta MCP `mcp_server-375467fc-e38b-4a44-8a7a-e44c2dbfd4a4`). Created Talk DM `EM-Researcher` (token `z4n3425w`); added researcher to `#team`. Deleted old agents (`agent-51e9d3e6` em, `agent-5b04211a` analyst-a); recreated EM (`agent-414ea769`) + Researcher (`agent-92367e4d`) with re-frozen prompts. Identity-isolated tool-exec probe passes (both agents post to #team as their own actor and write to `/agents/<role>-ping.txt`). | Better ablation for Run 1 — exercises the web-fetch path + contamination guard live before Run 2; analyst-synthesis loop deferred to Run 2 where analysts have peers to collaborate with. |
