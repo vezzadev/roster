@@ -32,3 +32,4 @@ logs/
 
 # Local-only secrets / credentials (raw-value files, never commit)
 *.local
+.playwright-cli/

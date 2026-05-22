@@ -1,0 +1,5 @@
+Date,Slug,Usage,BYOK Usage,Requests,Prompt Tokens,Completion Tokens,Reasoning Tokens
+"2026-05-22 00:00:00","anthropic/claude-opus-4.7","6.821985","0","38","1249802","22919","340"
+"2026-05-22 00:00:00","anthropic/claude-sonnet-4.6","24.012084","0","110","7796838","41438","192"
+"2026-05-22 01:00:00","anthropic/claude-opus-4.7","11.841375","0","23","2162750","41105","101"
+"2026-05-22 01:00:00","anthropic/claude-sonnet-4.6","15.203523","0","52","4846141","44340","58"
