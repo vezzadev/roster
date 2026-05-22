@@ -13,14 +13,14 @@ The spike validates **Success Criterion #5** (see [../design/06-validation.md](.
 | Task | Priority | Effort (human / CC) | Owning file(s) | Status |
 |------|----------|---------------------|----------------|--------|
 | T1 | P1 | 3h / 20min | [t1-grading-rubric.md](t1-grading-rubric.md) | ✅ done — 8 dimensions remapped to actual BCG Vietnam section order; "5 = better" tier codes the gaps BCG itself doesn't fill (paired mitigations, decision framework, archetype bifurcation, consistent forecast methodology) |
-| — | — | — | [spike-compose/](spike-compose/) | 🟡 compose + .env.example + runbook drafted; copy to ~/spike-runtime/ and step through `docker-compose.yml` bring-up sequence to boot Run 1 |
+| — | — | — | [spike-compose/](spike-compose/) | ✅ stood up — `docker-compose.yml` brought up + bind-mounted Letta SSRF patch (`letta-patches/url_validation.py`); `wire-run-1.py` provisions per-agent Letta containers + MCP wiring; `driver.py` synchronous Talk→Letta relay (~12 ticks across Run 1 with 0 lost messages); `show-trace.py` ad-hoc reasoning-trace dump. Squid not used — replaced by Firecrawl-side blocklist in `researcher-web-mcp/` per PR #29 |
 | T2 | P1 | 30min / 5min | [t2-fallback-bullets.md](t2-fallback-bullets.md) | ✅ done — 3 failure modes × 4 alternatives + terminal exits |
 | T3 | P1 | 2h / 10min | (this folder) | ✅ done — 11 files scaffolded |
 | T4 | P1 | 3d / 1d | [t4-mcp-investigation.md](t4-mcp-investigation.md) | ✅ done — adopt cbcoutinho/nextcloud-mcp-server; MVP build skipped |
-| T5 | P1 | 2d / 4h | [t5-run-ledger.md](t5-run-ledger.md), [t5-system-prompts.md](t5-system-prompts.md), [t5-env-manifest.md](t5-env-manifest.md), [t5-event-timeline.md](t5-event-timeline.md), [t5-what-didnt-work.md](t5-what-didnt-work.md), [t5-researcher-urls.md](t5-researcher-urls.md) | 🟡 prompts frozen 2026-05-21 (4 roles, 0 banned-token hits, hashes recorded); runs await Nextcloud + Letta + Squid setup |
+| T5 | P1 | 2d / 4h | [t5-run-ledger.md](t5-run-ledger.md), [t5-system-prompts.md](t5-system-prompts.md), [t5-env-manifest.md](t5-env-manifest.md), [t5-event-timeline.md](t5-event-timeline.md), [t5-what-didnt-work.md](t5-what-didnt-work.md), [t5-researcher-urls.md](t5-researcher-urls.md), [t5-run-1-conclusions.md](t5-run-1-conclusions.md), [run1-artifacts/](run1-artifacts/) | 🟡 **Run 1 done** (2-agent EM + Researcher — pairing swapped from EM + Analyst A per PR #30; 00:31:23 → 01:21:10 UTC; brief artifact `run1-artifacts/brief.md`; conclusions in t5-run-1-conclusions.md landed via PR #32). **Run 1-bis planned** before Run 2: same scope but route through Letta Cloud (model = `letta/auto-chat` or similar, replacing OpenRouter) for cost-attribution comparison — see T7 below. **Run 2 (4-agent main, SC#5-gating) still pending** |
 | T6 | P2 | 15min / 2min | [t5-run-ledger.md](t5-run-ledger.md) "Forced SPOF" section | ⏳ not started — awaits Run 2 mid-flight |
-| T7 | P2 | 1h / 15min | [t7-spike-cost.md](t7-spike-cost.md) | ⏳ not started — capture method documented; no snapshots yet |
-| T8 | P1 | 2h / 30min | [t8-sample-brief.md](t8-sample-brief.md) + AI-panel review file (to be created at T8 time) | ⏳ not started — awaits Run 2 artifact |
+| T7 | P2 | 1h / 15min | [t7-spike-cost.md](t7-spike-cost.md), [exports/run1-openrouter.csv](exports/run1-openrouter.csv) | 🟡 Run 1 snapshot in: $57.87 total (Opus EM $18.66 / 61 req / 3.4M prompt + Sonnet Researcher $39.21 / 162 req / 12.6M prompt). **Caching gap surfaced**: per-request `native_tokens_cached: 0` on both models — Letta's `cache_control` injection lives only in `anthropic_client.py`, not the OpenAI-compatible OpenRouter path. Founder is researching the Letta-side fix in isolation; spike will not open upstream issues. **Action**: Run 1-bis on Letta Cloud API (`auto`/`auto-chat`/`auto-memory`/`auto-fast`) for cost A/B vs OpenRouter |
+| T8 | P1 | 2h / 30min | [t8-sample-brief.md](t8-sample-brief.md) + AI-panel review file (to be created at T8 time) | ⏳ not started — Run 1's `run1-artifacts/brief.md` is **not** the SC#5 artifact (only 2 of 4 agents); informal preliminary read in [t5-run-1-conclusions.md](t5-run-1-conclusions.md) "Brief quality" section. Formal SC#5 self-grade + multi-AI panel still awaits Run 2 |
 
 Legend: ✅ done · 🟡 partial · ⏳ not started
 
@@ -44,10 +44,11 @@ Survey existing Nextcloud MCP servers; answer **API coverage** (Talk + Files ope
 
 ### T5 — Spike runs
 
-Two numbered runs with **prompt freeze per run** + run matrix committed to [t5-run-ledger.md](t5-run-ledger.md) (Codex T4-D mitigation).
+Numbered runs with **prompt freeze per run** + run matrix committed to [t5-run-ledger.md](t5-run-ledger.md) (Codex T4-D mitigation).
 
-- **Run 1: 2-agent smoke (1h hard cap)** — EM + Senior Analyst A. Ablation control so a 4-agent failure can be localized to collaboration overhead vs prompt design vs tool friction (Codex T4-A).
-- **Run 2: 4-agent main spike** — full team (EM + 2 Senior Analysts + Researcher). Produces the artifact in [t8-sample-brief.md](t8-sample-brief.md).
+- **Run 1: 2-agent smoke (1h hard cap)** — EM + Researcher (pairing swapped from EM + Analyst A pre-kickoff per PR #30 — Researcher is the higher-friction partner to pair the EM with first). Ablation control so a 4-agent failure can be localized to collaboration overhead vs prompt design vs tool friction (Codex T4-A). **Done** 2026-05-22 00:31:23 → 01:21:10 UTC. Outcome: success, structured brief in [run1-artifacts/brief.md](run1-artifacts/brief.md), conclusions in [t5-run-1-conclusions.md](t5-run-1-conclusions.md). Per-agent Letta architecture (split from singleton) lifted from a workaround to a v1 structural decision after a tool-namespace collision was discovered pre-Run-1.
+- **Run 1-bis: same scope on Letta Cloud API** (planned, awaiting founder caching research) — identical 2-agent EM+Researcher workload but route inference through Letta Cloud's own model handles (`letta/auto-chat`, `auto-memory`, `auto-fast`, etc.) instead of `anthropic/*` through OpenRouter. Purpose: A/B the cost and cache-hit profile (Letta-managed inference likely uses the cached path it actually wired) without touching the spike's prompts or driver. Lands in [t5-run-ledger.md](t5-run-ledger.md) + [t7-spike-cost.md](t7-spike-cost.md) Run 1-bis rows.
+- **Run 2: 4-agent main spike** — full team (EM + 2 Senior Analysts + Researcher). Produces the artifact in [t8-sample-brief.md](t8-sample-brief.md). Still pending; G-1…G-8 readiness list in [t5-run-1-conclusions.md](t5-run-1-conclusions.md) gates the kickoff.
 
 T5 also populates: [t5-system-prompts.md](t5-system-prompts.md) (frozen prompts + hashes), [t5-env-manifest.md](t5-env-manifest.md) (container + model versions per run), [t5-event-timeline.md](t5-event-timeline.md) (agent-to-agent message trace), [t5-what-didnt-work.md](t5-what-didnt-work.md) (running dead-end journal), [t5-researcher-urls.md](t5-researcher-urls.md) (Researcher URL fetch log for the contamination guard).
 
@@ -57,7 +58,9 @@ During Run 2, `kill -9` the Letta server container mid-flight to observe reconne
 
 ### T7 — Cost tracking
 
-Hourly OpenRouter usage export + mid-week and end-week trendline check against **SC#6 ($200/mo for 4-agent team)**. Topline signal only; per-call instrumentation deferred to weeks 5-6 (Codex D8 mitigation). File: [t7-spike-cost.md](t7-spike-cost.md). v1 routes inference through OpenRouter; OpenRouter markup over Anthropic-direct list price may push SC#6 — re-baseline when the first trendline lands.
+Hourly OpenRouter usage export + mid-week and end-week trendline check against **SC#6 ($200/mo for 4-agent team)**. Topline signal only; per-call instrumentation deferred to weeks 5-6 (Codex D8 mitigation). File: [t7-spike-cost.md](t7-spike-cost.md); raw exports under [exports/](exports/).
+
+**Run 1 finding (2026-05-22):** OpenRouter spend matches list price to the cent at zero prompt caching (Opus EM $18.66 + Sonnet Researcher $39.21 = $57.87). Per-request `native_tokens_cached: 0` across all sampled rows. Root cause traced to Letta's `cache_control` injection being scoped to `anthropic_client.py` only, not the OpenAI-compatible OpenRouter path the spike uses (see [t5-run-1-conclusions.md](t5-run-1-conclusions.md) C-3). The founder is researching the Letta-side fix in isolation — the spike will not file upstream issues or draft patches. The cost-attribution next step is **Run 1-bis on Letta Cloud's own API handles** to A/B against OpenRouter under the same workload (T5 above).
 
 ### T8 — Gate decision
 
