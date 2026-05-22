@@ -53,29 +53,31 @@ Example:
 ./bring-up.sh down
 ```
 
-## Run 1 readiness gates
+## Run 1 readiness gates (post-swap to EM + Researcher)
 
-- [ ] `.env` populated; `chmod 600 .env` applied.
-- [ ] `docker compose up -d nc-db nc-redis nextcloud` → all healthy.
-- [ ] Talk installed: `docker compose exec --user www-data nextcloud php occ app:install spreed`.
-- [ ] Users `em`, `analyst-a` created; one app-password each.
-- [ ] `/agents/` and `/founder/` folders created; ACLs verified by logging in as each agent user (`/founder/` must be invisible).
-- [ ] Talk rooms `#team` and `EM-A` created with the right participants.
-- [ ] `docker compose up -d letta nextcloud-mcp` → healthy.
-- [ ] Letta agents wired with frozen EM + Analyst A prompts; SHA-256 hashes re-verified against [../t5-system-prompts.md](../t5-system-prompts.md) "Hash protocol".
-- [ ] Banned-token grep returns 0 hits.
-- [ ] Container image digests captured in [../t5-env-manifest.md](../t5-env-manifest.md) Run 1 row.
-- [ ] [../t5-run-ledger.md](../t5-run-ledger.md) Run 1 row opened with timestamp + frozen-hash + contamination-grep result + the documented "Run 1 brief is diagnostic, not rubric-gradable" note.
+- [x] `.env` populated; `chmod 600 .env` applied.
+- [x] `docker compose up -d nc-db nc-redis nextcloud` → all healthy.
+- [x] Talk installed: `docker compose exec --user www-data nextcloud php occ app:install spreed`.
+- [x] Users `em`, `researcher` created with sentinel passwords; one app-password each, stored in gitignored `em-token.local` / `researcher-token.local`.
+- [x] `/agents/` and `/founder/` folders created; `/agents/` shared rw with em + researcher; `/founder/` invisible to both agent users (PROPFIND verified).
+- [x] Talk rooms `#team` (em + researcher) and `EM-Researcher` created with the right participants.
+- [x] `docker compose up -d letta nextcloud-mcp-em nextcloud-mcp-researcher researcher-web-mcp` → healthy.
+- [x] Letta agents wired with frozen EM + Researcher prompts; SHA-256 hashes verify against [../t5-system-prompts.md](../t5-system-prompts.md) "Hash protocol".
+- [x] Banned-token grep returns 0 hits across 25 tokens for both prompts.
+- [x] Container image digests captured in [../t5-env-manifest.md](../t5-env-manifest.md) Run 1 row.
+- [x] [../t5-run-ledger.md](../t5-run-ledger.md) Run 1 row opened with timestamp + frozen-hash + contamination-grep result + the documented "Run 1 brief is diagnostic, not rubric-gradable" note.
+- [ ] Kickoff message `"Begin the engagement."` posted to EM agent.
 
 ## Run 2 extras (after Run 1 closes)
 
 - [x] `firecrawl.local` populated with the Firecrawl API key.
 - [x] `researcher-web-mcp` service builds + boots + contamination guard verified end-to-end (blocked URL via Letta returns `blocked_by_contamination_guard`).
-- [ ] Users `analyst-b`, `researcher` created; one app-password each.
-- [ ] DM rooms `EM-B`, `EM-Researcher`, `A-B`, `A-Researcher`, `B-Researcher` created.
+- [x] User `researcher` exists (provisioned for Run 1).
+- [ ] User `analyst-b` created; one app-password (the original `analyst-a` user is also available — its MCP container is already registered with Letta as `nextcloud-analyst-a` but unused in Run 1).
+- [ ] DM rooms `EM-B`, `A-B`, `A-Researcher`, `B-Researcher` created (`EM-Researcher` already exists from Run 1; the original `EM-A` DM also still exists).
 - [ ] `/agents/researcher-urls-log.md` initialized as an empty file in Nextcloud Files (Researcher appends to it; founder copies the contents to [../t5-researcher-urls.md](../t5-researcher-urls.md) post-run for the repo audit trail).
-- [ ] Letta agents wired with frozen Analyst B + Researcher prompts; hashes + contamination grep re-verified.
-- [ ] Researcher agent attached to the `researcher-web` MCP server's `web_search` + `web_scrape` tools.
+- [ ] Letta agents wired with frozen Analyst A + Analyst B prompts; hashes + contamination grep re-verified.
+- [ ] (Already true from Run 1) Researcher agent attached to the `researcher-web` MCP server's `web_search` + `web_scrape` tools.
 
 ## What this does NOT include (deliberately)
 
