@@ -125,6 +125,13 @@ services:
       # only if the key for the chosen handle is missing.
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Modal credentials enable Letta's tool sandbox (ToolSettings.modal_sandbox_enabled
+      # flips True iff both are set). Used by Python tools registered via
+      # /v1/tools/ — letta routes them to Modal-deployed functions instead of
+      # the LOCAL in-process executor. Tolerant: when absent, Letta falls back
+      # to LOCAL execution (no isolation; only safe for trusted-tool spike work).
+      MODAL_TOKEN_ID: ${MODAL_TOKEN_ID:-}
+      MODAL_TOKEN_SECRET: ${MODAL_TOKEN_SECRET:-}
       SECURE: "true"
       LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
     volumes:
@@ -152,6 +159,8 @@ services:
       # only if the key for the chosen handle is missing.
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      MODAL_TOKEN_ID: ${MODAL_TOKEN_ID:-}
+      MODAL_TOKEN_SECRET: ${MODAL_TOKEN_SECRET:-}
       SECURE: "true"
       LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
     volumes:
