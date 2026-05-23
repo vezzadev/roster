@@ -1,11 +1,11 @@
-"""Show the recent reasoning trace for a Run 1 agent (em or researcher).
+"""Show the recent reasoning trace for an agent (em, researcher, analyst-a, analyst-b).
 
 Usage:
     python3 show-trace.py em            # last 30 messages from EM agent
     python3 show-trace.py researcher 60 # last 60 messages from Researcher
 
 Pulls from Letta's `GET /v1/agents/<id>/messages` on the role's own Letta.
-Reads agent_id + letta_url out of run1-agents.local. Token from letta.local.
+Reads agent_id + letta_url out of run-2-agents.local. Token from letta.local.
 Output groups reasoning + tool_call + tool_return chronologically.
 """
 
@@ -17,7 +17,7 @@ import urllib.request
 
 SPIKE = pathlib.Path(__file__).parent
 LETTA_TOKEN = (SPIKE / "letta.local").read_text().strip()
-AGENTS = json.loads((SPIKE / "run1-agents.local").read_text())
+AGENTS = json.loads((SPIKE / "run-2-agents.local").read_text())
 
 WIDTH = 110
 

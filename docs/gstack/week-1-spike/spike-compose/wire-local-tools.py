@@ -52,7 +52,7 @@ import urllib.request
 SPIKE = pathlib.Path(__file__).parent
 LETTA_TOKEN = (SPIKE / "letta.local").read_text().strip()
 FIRECRAWL_KEY = (SPIKE / "firecrawl.local").read_text().strip()
-AGENTS = json.loads((SPIKE / "run1-agents.local").read_text())
+AGENTS = json.loads((SPIKE / "run-2-agents.local").read_text())
 RESEARCHER = AGENTS["researcher"]  # {agent_id, letta_url}
 
 LETTA_URL = RESEARCHER["letta_url"]
