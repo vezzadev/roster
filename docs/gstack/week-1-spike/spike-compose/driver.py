@@ -88,13 +88,20 @@ def load_state() -> dict:
 
 
 def load_rooms() -> list[dict]:
-    """Load Talk-room config from rooms.local. Fail loud on missing / unpopulated.
+    """Load Talk-room config from rooms.local, filtered to rooms relevant
+    to the current AGENTS set, with fail-loud validation on the survivors.
 
     Why fail loud: silently skipping unconfigured rooms is the same class of
     failure (missed wakes for some agent-pair) that the periodic-tick fallback
     is trying to prevent. If the operator forgot to populate, say, the A-B
-    DM token, the driver should refuse to start — not run with a degraded
-    room set that causes analysts to never see each other's messages.
+    DM token while running 4 agents, the driver should refuse to start.
+
+    Why filter first: for the 2-agent ablation re-run (AGENTS={em,researcher}),
+    rooms.local still contains all 7 entries with the 5 analyst-DM tokens left
+    as <<FILL_IN>>. Those rooms have no active agents in this run — the driver
+    would never poll them anyway — so validating their tokens would block a
+    valid 2-agent start. A room is "relevant" iff ≥2 of its actors are in
+    AGENTS (i.e. there's actual communication between live agents).
     """
     if not ROOMS_PATH.exists():
         raise SystemExit(
@@ -102,17 +109,19 @@ def load_rooms() -> list[dict]:
             f"{ROOMS_PATH.name} and populate real Talk-room tokens (created "
             f"via `occ talk:room:create` on the spike Nextcloud)."
         )
-    rooms = json.loads(ROOMS_PATH.read_text())
-    bad = [r for r in rooms if "<<" in r.get("token", "") or not r.get("token", "").strip()]
+    all_rooms = json.loads(ROOMS_PATH.read_text())
+    active = set(AGENTS)
+    relevant = [r for r in all_rooms if len(set(r.get("agent_actors", [])) & active) >= 2]
+    bad = [r for r in relevant if "<<" in r.get("token", "") or not r.get("token", "").strip()]
     if bad:
         raise SystemExit(
-            f"{ROOMS_PATH.name} has unpopulated tokens for: "
+            f"{ROOMS_PATH.name} has unpopulated tokens for active rooms: "
             f"{[r['name'] for r in bad]}. Fill them in before starting the driver."
         )
     # Convert agent_actors list (JSON has no sets) into a set for downstream use.
-    for r in rooms:
+    for r in relevant:
         r["agent_actors"] = set(r["agent_actors"])
-    return rooms
+    return relevant
 
 
 def save_state(state: dict) -> None:

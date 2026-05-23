@@ -104,13 +104,40 @@ To revert to the no-OTel base, drop `-f docker-compose.otel.yml` from invocation
 ## Run 2 extras (after Run 1 closes)
 
 - [x] `firecrawl.local` populated with the Firecrawl API key.
-- [x] `researcher-web-mcp` service builds + boots + contamination guard verified end-to-end (blocked URL via Letta returns `blocked_by_contamination_guard`).
+- [x] `researcher-web-mcp` service builds + boots + contamination guard verified end-to-end — **retired in PR #37**, replaced by CUSTOM `firecrawl_search` + `web_scrape` tools in Letta's LOCAL sandbox (`wire-local-tools.py`).
 - [x] User `researcher` exists (provisioned for Run 1).
-- [ ] User `analyst-b` created; one app-password (the original `analyst-a` user is also available — its MCP container is already registered with Letta as `nextcloud-analyst-a` but unused in Run 1).
-- [ ] DM rooms `EM-B`, `A-B`, `A-Researcher`, `B-Researcher` created (`EM-Researcher` already exists from Run 1; the original `EM-A` DM also still exists).
+- [ ] User `analyst-b` created + app password → `analyst-b-token.local`. Run **`./provision-analyst-b.sh`** (idempotent).
+- [ ] DM rooms `EM-A`, `EM-B`, `A-B`, `A-Researcher`, `B-Researcher` created with the right participants + `rooms.local` populated. Run **`python3 setup-run-2-talk-rooms.py`** (idempotent; also adds analyst-a + analyst-b to `#team`).
 - [ ] `/agents/researcher-urls-log.md` initialized as an empty file in Nextcloud Files (Researcher appends to it; founder copies the contents to [../t5-researcher-urls.md](../t5-researcher-urls.md) post-run for the repo audit trail).
-- [ ] Letta agents wired with frozen Analyst A + Analyst B prompts; hashes + contamination grep re-verified.
-- [ ] (Already true from Run 1) Researcher agent attached to the `researcher-web` MCP server's `web_search` + `web_scrape` tools.
+- [ ] Letta agents wired with frozen Analyst A + Analyst B prompts; hashes + contamination grep re-verified. Run **`python3 wire-run-2.py`** (writes `run-2-agents.local`).
+- [ ] `python3 wire-local-tools.py` to attach the CUSTOM Firecrawl tools to the Researcher (unchanged from Run 2-local-sandbox).
+- [ ] G-3.5: wipe `/agents/` + decide truncate-vs-recreate for `#team` + `EM-Researcher` rooms before kickoff (avoid the Run 1-anthropic-direct contamination pattern).
+
+### 2-agent ablation re-run (optional, recommended before 4-agent kickoff)
+
+Cheap insurance that the periodic-tick driver fix from PR #39 actually catches the Run 2-local-sandbox deadlock pattern at smaller scale. ~$5, 15-20 min cap.
+
+```
+# Bring up only the 2-agent subset
+./bring-up.sh up -d nc-db nc-redis nextcloud \
+    letta-em letta-researcher \
+    nextcloud-mcp-em nextcloud-mcp-researcher
+
+# Wire only EM + Researcher (analyst Lettas can stay down)
+WIRE_AGENTS=em,researcher python3 wire-run-2.py
+python3 wire-local-tools.py
+
+# rooms.local must have real tokens for #team + EM-Researcher (already
+# pre-filled in rooms.local.example from Run 1-anthropic-direct).
+# Driver's load_rooms() filters by "≥2 active agents present", so the 5
+# unpopulated analyst-DM rows won't trigger the fail-loud validation.
+cp rooms.local.example rooms.local   # only if rooms.local doesn't exist yet
+
+# 15-min cap, default 10-min tick. Pass criterion: Researcher posts per-file
+# Talk pings AND/OR EM gets re-woken via the periodic tick even when the
+# Researcher writes silently to /agents/.
+HARD_CAP_S=900 TICK_PERIOD_S=600 python3 driver.py
+```
 
 ## What this does NOT include (deliberately)
 
