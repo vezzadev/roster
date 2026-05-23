@@ -79,26 +79,34 @@ services:
     depends_on:
       - otel-collector
 
-  # Run 2 — uncomment alongside the analyst Letta services in docker-compose.yml.
-  #
-  # letta-analyst-a:
-  #   build: { context: ., dockerfile: Dockerfile.letta }
-  #   image: spike-compose-letta-otel:latest
-  #   environment:
-  #     OTEL_SERVICE_NAME: letta-analyst-a
-  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
-  #     OTEL_EXPORTER_OTLP_PROTOCOL: grpc
-  #     OTEL_TRACES_EXPORTER: otlp
-  #     OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=spike,agent_role=analyst-a,route=anthropic-native"
-  #   depends_on: [otel-collector]
-  #
-  # letta-analyst-b:
-  #   build: { context: ., dockerfile: Dockerfile.letta }
-  #   image: spike-compose-letta-otel:latest
-  #   environment:
-  #     OTEL_SERVICE_NAME: letta-analyst-b
-  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
-  #     OTEL_EXPORTER_OTLP_PROTOCOL: grpc
-  #     OTEL_TRACES_EXPORTER: otlp
-  #     OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=spike,agent_role=analyst-b,route=anthropic-native"
-  #   depends_on: [otel-collector]
+  letta-analyst-a:
+    build:
+      context: .
+      dockerfile: Dockerfile.letta
+    image: spike-compose-letta-otel:latest
+    environment:
+      OTEL_SERVICE_NAME: letta-analyst-a
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: none
+      OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=spike,agent_role=analyst-a,route=anthropic-native"
+    depends_on:
+      - otel-collector
+
+  letta-analyst-b:
+    build:
+      context: .
+      dockerfile: Dockerfile.letta
+    image: spike-compose-letta-otel:latest
+    environment:
+      OTEL_SERVICE_NAME: letta-analyst-b
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: none
+      OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=spike,agent_role=analyst-b,route=anthropic-native"
+    depends_on:
+      - otel-collector

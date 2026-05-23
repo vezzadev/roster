@@ -235,3 +235,59 @@ Both should land in a small follow-up PR before the 4-agent gating run:
 7. **Decide on tick validation.** Either accept the structural fix as
    wired-but-unproven and move on, or schedule a deliberate forced-silence
    test before the gating run.
+
+## Run 2-4agent-attempt-1 (halted 2026-05-23 18:24 UTC)
+
+First 4-agent boot. Driver up 5400s cap / 600s tick, all 4 agents wired, native Anthropic, OTel-instrumented. Halted at T+67 min. Cap not reached.
+
+**Decision (2026-05-23): halt entirely; do not restart until F-8 (upstream Letta summarizer bug) is resolved.** F-7 share fix was applied + analyst work migrated into admin's `/agents/` so the analyses aren't lost. Letta + MCP + OTel containers stopped; Nextcloud + db left up for post-run review. The "Open items before Run 2-4agent-attempt-2" list below is a future-state checklist, not a here-and-now plan.
+
+**Topline.** Tick mechanism proved itself in production — fired 11 times across all 4 agents (F-6 no longer "wired-but-unproven"). Both findings below are independent of the tick.
+
+**F-7. `/agents/` is per-user, not shared across all 4 agent identities.**
+
+Symptom: at halt, files were split across 3 separate Nextcloud user homes:
+
+| User | Path | Content |
+|---|---|---|
+| admin | `/var/www/html/data/admin/files/agents/` | em_runplan (3KB), research_bundle1_logistics (7KB), research_bundle1_macro_digital (7KB), research_bundle1_regulatory (12.6KB), researcher-urls-log (2.4KB) |
+| analyst-a | `/var/www/html/data/analyst-a/files/agents/` | analysis_competitive_gtm (17KB) |
+| analyst-b | `/var/www/html/data/analyst-b/files/agents/` | analysis_entry_unit_econ (11.6KB) |
+| em, researcher | (no `/agents/` folder of their own) | — |
+
+Root cause: admin's `/agents/` was shared with em + researcher in the original Run 1 setup but the share was never extended to analyst-a + analyst-b. When their MCPs called `nc_webdav_write_file("/agents/...")`, the WebDAV `MKCOL` implicit in the write created a private `/agents/` directory in each analyst's own home. So analyst-a's competitive/GTM analysis (17KB) and analyst-b's unit-econ analysis (11.6KB) were invisible to EM, Researcher, and each other. The EM saw only Researcher bundles in its view of `/agents/`; both analysts saw only their own work.
+
+This compounded the coordination tempo collapse: agents kept producing work locally, but each agent's WebDAV `nc_webdav_list_directory` returned a different file set, so cross-reads silently no-op'd. The tick mechanism kept agents moving but couldn't bridge the visibility gap.
+
+Fix: extend the admin → em + researcher share to also include analyst-a + analyst-b with permission=31 (read+write+delete+share). One-shot via OCS Sharing API (no `occ share:create` exists). Pre-restart cleanup also needs to migrate the siloed work into admin's `/agents/`.
+
+**F-8. Letta upstream summarizer bug — `async_generator` not an async context manager (NOT trivially fixable).**
+
+Symptom: `letta-researcher` + `letta-analyst-a` both crashed during context summarization (when conversation history grew large enough to trigger the summarizer):
+
+```
+File "/app/letta/interfaces/anthropic_parallel_tool_call_streaming_interface.py", line 249, in process
+    async with stream:
+TypeError: 'async_generator' object does not support the asynchronous context manager protocol
+```
+
+Stack: `summarizer._execute_summarizer_request` → `interface.process(stream)` → `async with stream:` where `stream` is an `async_generator` object (cannot be used with `async with` — needs to be an `AsyncContextManager`).
+
+Affected: Letta 0.16.8 image (`spike-compose-letta-otel:latest` derived from upstream). Both Researcher and Analyst A hit it after ~30 min of conversation buildup. Analyst B and EM didn't trigger it within the window (smaller context).
+
+Impact during the run: the agent loop crashed mid-step but Letta logged `Step Progression: FINISHED` and the run record persisted; subsequent ticks still hit Letta cleanly and returned partial results, but the agent could not compact its context (so kept growing it on every tick — costlier per call, and risks an eventual hard context-length exceeded).
+
+Net: this is a Letta-side bug in the streaming interface, not a Roster fix. Two workarounds available:
+
+(a) Bump Letta to a version where the streaming interface treats `stream` as `await async_generator.__anext__()` (or whatever the upstream patch turns out to be). Requires checking newer images / changelog for a relevant fix.
+
+(b) Disable the summarizer / set context limits high enough that summarization never kicks in within a 90-min cap. Letta config knobs not yet enumerated for this; would need to inspect the `summarizer_mode` / `recall_memory` toggles.
+
+Per `upstream_research_isolation` memory: not filing an issue without explicit ask.
+
+## Open items before Run 2-4agent-attempt-2
+
+1. **Pre-restart: extend `/agents/` share to all 4 agent users** with permission=31 via OCS Sharing API, and migrate analyst-a + analyst-b's siloed work into admin's `/agents/` so the analyses aren't lost.
+2. **Decide on Letta summarizer bug**: (a) bump Letta version, (b) raise context window via config, (c) accept as known risk and let the run proceed until either the bug bites again or the workload finishes within the unsummarized window.
+3. **Standardize provisioning**: extend `provision-analyst-b.sh` (or `setup-run-2-talk-rooms.py`) to also set up the share. Future runs shouldn't depend on Run 1-era share state surviving wipes.
+4. **Run 1's share was admin → em + researcher.** Document this for any future bring-up: a Run 2 4-agent rerun from a clean Nextcloud needs the share created from scratch, not just extended.
