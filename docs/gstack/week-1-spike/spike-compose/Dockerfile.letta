@@ -1,0 +1,57 @@
+# Derived Letta image with OpenTelemetry auto-instrumentation for the Anthropic
+# SDK. Built locally (not pushed); referenced by docker-compose.otel.yml when
+# the operator wants apples-to-apples observability against OpenRouter
+# Broadcast → OTel → App Insights data.
+#
+# The base image already runs Letta; we add:
+#   1. opentelemetry-distro[otlp]                  — exporter + SDK wiring
+#   2. opentelemetry-instrumentation-anthropic     — Anthropic SDK hook with
+#      gen_ai.* attributes including cache_creation_input_tokens and
+#      cache_read_input_tokens (Traceloop's openllmetry maintains this; track
+#      its CHANGELOG when bumping)
+#   3. ancillary instrumentations (httpx, fastapi) — Letta's HTTP surface +
+#      its REST API surface, so the trace tree shows tool dispatches alongside
+#      LLM calls
+#
+# Auto-instrumentation is triggered at every Python interpreter startup via
+# a sitecustomize symlink on PYTHONPATH — this is the same mechanism the
+# `opentelemetry-instrument` CLI uses, but avoids us having to know or wrap
+# the base image's ENTRYPOINT / CMD. The original Letta startup runs
+# untouched; only the OpenTelemetry SDK initializes alongside it.
+#
+# Env that MUST be set at runtime (see docker-compose.otel.yml):
+#   OTEL_SERVICE_NAME, OTEL_EXPORTER_OTLP_ENDPOINT, OTEL_RESOURCE_ATTRIBUTES
+#
+# Verification: after first request, the App Insights `dependencies` table
+# should carry rows with customDimensions["gen_ai.system"] == "anthropic".
+# See kql/01-verify-anthropic-events.kql.
+
+FROM letta/letta:latest
+
+# Pin versions to keep the trace shape stable across rebuilds. Bumping
+# opentelemetry-instrumentation-anthropic is the lever that picks up new
+# Anthropic SDK fields (e.g., future cache-tier breakdown); verify on bump
+# that gen_ai.usage.cache_read_input_tokens still appears.
+# The upstream letta/letta image strips pip from its venv at build time
+# (uses uv, then deletes both). Bootstrap pip via ensurepip before installing
+# the OTel packages.
+RUN python -m ensurepip --upgrade \
+ && python -m pip install --no-cache-dir --upgrade pip \
+ && python -m pip install --no-cache-dir \
+      "opentelemetry-distro[otlp]==0.51b0" \
+      "opentelemetry-instrumentation-anthropic==0.45.0" \
+      "opentelemetry-instrumentation-httpx==0.51b0" \
+      "opentelemetry-instrumentation-fastapi==0.51b0"
+
+# Plant the auto-instrumentation sitecustomize on PYTHONPATH so it loads
+# during Python's site init — no wrapper script needed. The base image's
+# entrypoint/cmd are inherited untouched.
+RUN mkdir -p /opt/otel-bootstrap \
+ && OTEL_AUTO=$(python -c "import opentelemetry.instrumentation.auto_instrumentation as m, os; print(os.path.dirname(m.__file__))") \
+ && ln -s "$OTEL_AUTO/sitecustomize.py" /opt/otel-bootstrap/sitecustomize.py
+
+ENV PYTHONPATH=/opt/otel-bootstrap:${PYTHONPATH}
+# Match the OTel SDK to the contrib gen_ai semantic conventions emitted by
+# opentelemetry-instrumentation-anthropic; otherwise cache token attributes
+# may land under llm.* legacy names that the KQL queries don't filter on.
+ENV OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental

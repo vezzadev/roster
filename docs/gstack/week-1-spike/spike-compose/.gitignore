@@ -6,8 +6,13 @@ researcher-web-mcp/audit/
 # driver.py spike-time relay runtime files (state file is also matched by *.local
 # at the repo root, but be explicit here so it's clear).
 driver.log
+driver.log.*
+driver.stdout
 driver-state.local
 # Kickoff bookkeeping files
 kickoff-timestamp.local
 run1-kickoff-response.local
 run1-followup-response.local
+# Timestamped backups of .local files (e.g. when swapping agent registries between
+# routes). *.local matches the base name at the repo root, but not these suffixes.
+*.local.*

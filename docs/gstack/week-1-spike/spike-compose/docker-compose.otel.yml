@@ -1,0 +1,104 @@
+# Optional OTel observability overlay. Use alongside docker-compose.yml:
+#
+#   ./bring-up.sh -f docker-compose.yml -f docker-compose.otel.yml up -d \
+#       otel-collector letta-em letta-researcher
+#
+# What this adds:
+#   • otel-collector service — contrib distribution (azuremonitor exporter is
+#     not in core). Receives OTLP/gRPC on :4317; fans out to Azure Monitor
+#     (Application Insights connection string sourced via bring-up.sh) and
+#     to stdout for local debug.
+#   • Swaps letta-em + letta-researcher to the derived Dockerfile.letta image
+#     so the Anthropic SDK and httpx calls auto-instrument.
+#   • Injects OTEL_* env per Letta container so each agent's spans tag with
+#     its own service.name (letta-em vs letta-researcher) — App Insights maps
+#     this onto cloud_RoleName, so per-agent breakdowns in KQL are one-liners.
+#
+# This overlay does not stand on its own — it only patches the base compose.
+# To revert to the OpenRouter-routed Letta with no OTel, just omit the
+# `-f docker-compose.otel.yml` arg.
+#
+# This overlay is independent of OpenRouter vs native Anthropic — the OTel
+# auto-instrumentation captures spans for whichever SDK Letta ends up calling.
+# For Run 1-anthropic-direct (the C-6 unblock), pair this with ANTHROPIC_API_KEY
+# wired into letta-em + letta-researcher and model handles switched to native
+# anthropic/claude-* in wire-run-1.py.
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.110.0
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    environment:
+      # Application Insights connection string — full one-liner from the Azure
+      # portal: "InstrumentationKey=...;IngestionEndpoint=...;LiveEndpoint=...".
+      # bring-up.sh sources this from ./azure-appinsights.local (gitignored).
+      AZURE_MONITOR_CONNECTION_STRING: ${AZURE_MONITOR_CONNECTION_STRING:?run ./bring-up.sh — sources ./azure-appinsights.local}
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    networks: [spike]
+    # OTLP/gRPC on 4317 + OTLP/HTTP on 4318. Bound to localhost only — Letta
+    # containers reach it over the `spike` bridge by service name, not the
+    # host ports. Host binding is purely for ad-hoc curl/grpcurl debugging.
+    ports:
+      - "127.0.0.1:4317:4317"
+      - "127.0.0.1:4318:4318"
+
+  letta-em:
+    build:
+      context: .
+      dockerfile: Dockerfile.letta
+    image: spike-compose-letta-otel:latest
+    environment:
+      OTEL_SERVICE_NAME: letta-em
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: none
+      # `route` is the dimension the KQL queries pivot on (anthropic-native vs
+      # openrouter). Switch it when you flip the model handle path; nothing
+      # else needs to change in the observability pipeline.
+      OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=spike,agent_role=em,route=anthropic-native"
+    depends_on:
+      - otel-collector
+
+  letta-researcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.letta
+    image: spike-compose-letta-otel:latest
+    environment:
+      OTEL_SERVICE_NAME: letta-researcher
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+      OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+      OTEL_TRACES_EXPORTER: otlp
+      OTEL_METRICS_EXPORTER: otlp
+      OTEL_LOGS_EXPORTER: none
+      OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=spike,agent_role=researcher,route=anthropic-native"
+    depends_on:
+      - otel-collector
+
+  # Run 2 — uncomment alongside the analyst Letta services in docker-compose.yml.
+  #
+  # letta-analyst-a:
+  #   build: { context: ., dockerfile: Dockerfile.letta }
+  #   image: spike-compose-letta-otel:latest
+  #   environment:
+  #     OTEL_SERVICE_NAME: letta-analyst-a
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+  #     OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+  #     OTEL_TRACES_EXPORTER: otlp
+  #     OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=spike,agent_role=analyst-a,route=anthropic-native"
+  #   depends_on: [otel-collector]
+  #
+  # letta-analyst-b:
+  #   build: { context: ., dockerfile: Dockerfile.letta }
+  #   image: spike-compose-letta-otel:latest
+  #   environment:
+  #     OTEL_SERVICE_NAME: letta-analyst-b
+  #     OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+  #     OTEL_EXPORTER_OTLP_PROTOCOL: grpc
+  #     OTEL_TRACES_EXPORTER: otlp
+  #     OTEL_RESOURCE_ATTRIBUTES: "deployment.environment=spike,agent_role=analyst-b,route=anthropic-native"
+  #   depends_on: [otel-collector]

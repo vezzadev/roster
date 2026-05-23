@@ -126,7 +126,16 @@ ROLES = [
     {
         "title": "Engagement Manager (EM)",
         "name": "em",
-        "model": "openrouter/anthropic/claude-opus-4.7",
+        # Native Anthropic handle (Run 1-anthropic-direct + Run 2). Switched
+        # from `openrouter/anthropic/claude-opus-4.7` per C-6 in
+        # ../t5-run-1-conclusions.md — the OpenRouter / OpenAI-compatible
+        # path in Letta does not emit `cache_control` markers (upstream
+        # letta-ai/letta#3351), so cached input tokens were always 0 and
+        # Run 1's $57.87 was uncached list price. The native Anthropic
+        # client path in Letta (`anthropic_client.py`) emits cache_control
+        # correctly. Requires `ANTHROPIC_API_KEY` env on the letta-em
+        # container — bring-up.sh sources from ./anthropic.local.
+        "model": "anthropic/claude-opus-4-7",
         "letta_url": "http://127.0.0.1:8283",
         "mcps": [
             ("nextcloud-em", "http://nextcloud-mcp-em:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
@@ -135,7 +144,7 @@ ROLES = [
     {
         "title": "Researcher",
         "name": "researcher",
-        "model": "openrouter/anthropic/claude-sonnet-4.6",
+        "model": "anthropic/claude-sonnet-4-6",
         "letta_url": "http://127.0.0.1:8284",
         "mcps": [
             ("nextcloud-researcher", "http://nextcloud-mcp-researcher:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
@@ -232,6 +241,21 @@ def main():
             "include_base_tools": True,
             "memory_blocks": MEMORY_BLOCKS[role["name"]],
         })
+        # Anthropic native `claude-opus-4-7` rejects `thinking.type.enabled`
+        # mode (only `adaptive` is supported per Anthropic /v1/models). Letta
+        # 0.16.8 emits `thinking.type.enabled` whenever `enable_reasoner=true`
+        # and does not yet wire `adaptive` mode for Opus 4.7. The native run
+        # therefore disables the reasoner on Opus only — Run 1 cost analysis
+        # found reasoning tokens were 0.05% of total tokens (not a cost lever).
+        # Quality impact is logged as a Run-1-anthropic-direct caveat. Sonnet
+        # 4.6 still supports `enabled` so the Researcher keeps the reasoner on.
+        # PATCH after create (create-time llm_config is rejected as 422 by
+        # Letta 0.16.8 when partial; full shape required for create).
+        if role["model"] == "anthropic/claude-opus-4-7":
+            existing = http(letta_url, "GET", f"/v1/agents/{created['id']}")
+            cfg = dict(existing["llm_config"])
+            cfg["enable_reasoner"] = False
+            http(letta_url, "PATCH", f"/v1/agents/{created['id']}", {"llm_config": cfg})
         agent_id = created["id"]
         agent_ids[role["name"]] = {"agent_id": agent_id, "letta_url": letta_url}
         print(f"  agent created: {agent_id} ({len(tool_ids)} MCP tools + Letta base)")

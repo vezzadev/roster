@@ -1,0 +1,34 @@
+// Smoke check after first Letta-via-Anthropic request. Run after a single
+// `ping` to one of the Letta agents; expect 1+ rows back with:
+//   • name == "anthropic.chat" (the span name set by
+//     opentelemetry-instrumentation-anthropic)
+//   • cloud_RoleName == "letta-em" (or "letta-researcher")
+//   • prompt_tokens > 0; cache_read may be 0 on first turn, non-zero on turn 2
+//
+// Notes (verified 2026-05-23 against the Run 1-anthropic-direct dataset):
+//   1. The instrumentation emits the LEGACY field names
+//      (`gen_ai.usage.prompt_tokens` / `gen_ai.usage.completion_tokens`),
+//      not the newer `input_tokens` / `output_tokens` keys, even with
+//      OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental set.
+//   2. `customDimensions` is truncated by App Insights at ~64KB. Spans
+//      carrying gen_ai.prompt / gen_ai.completion payloads will lose
+//      tail-end attributes (`agent_role`, `gen_ai.request.model` etc.).
+//      Filter / group by `cloud_RoleName` and `name` (top-level columns,
+//      not inside customDimensions) so truncated spans still aggregate.
+//   3. If cache_read_input_tokens never appears: confirm the request went
+//      through Letta's native Anthropic client (model handle = `anthropic/…`,
+//      not `openrouter/…`) per t5-run-1-conclusions.md C-6.
+
+dependencies
+| where timestamp > ago(30m)
+| where name == "anthropic.chat"
+| extend
+    prompt_tokens     = tolong(customDimensions["gen_ai.usage.prompt_tokens"]),
+    completion_tokens = tolong(customDimensions["gen_ai.usage.completion_tokens"]),
+    cache_read        = tolong(customDimensions["gen_ai.usage.cache_read_input_tokens"]),
+    cache_write       = tolong(customDimensions["gen_ai.usage.cache_creation_input_tokens"])
+| project timestamp, cloud_RoleName, name,
+          prompt_tokens, completion_tokens, cache_read, cache_write,
+          duration_ms = duration
+| order by timestamp desc
+| take 20

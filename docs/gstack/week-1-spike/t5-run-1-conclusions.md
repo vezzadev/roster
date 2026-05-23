@@ -158,6 +158,30 @@ The agents correctly identified that the deliverables had been wiped, correctly 
 
 **Action.** Add Talk-room reset to the Run 2 prep checklist (G-3.5 in the table below). For Run 1-bis on Letta Cloud, the same applies — either truncate the rooms or use fresh room tokens.
 
+### C-6. Run 2 (as-wired, OpenRouter routing) is blocked on upstream Letta fix; Letta Cloud is not the unblock.
+
+C-3 above identified the root cause: Letta's `cache_control` injection lives only in `anthropic_client.py`, not in the OpenAI-compatible OpenRouter path the spike uses. Filed upstream on 2026-05-22 21:05 UTC as [letta-ai/letta#3351](https://github.com/letta-ai/letta/issues/3351) ("OpenRouter / OpenAI-compatible path skips cache_control injection") with bench numbers + the code-path investigation. The spike does not draft patches; it tracks the issue's resolution.
+
+**Block decision.** Running the 4-agent Run 2 on the broken path costs roughly $100/run for ~$75 of work that should land cached — about 24% over budget on the Run-1 extrapolation in C-3, with both Opus (1 of 4 agents) and Sonnet (3 of 4) paying full list price across ~16M+ prompt tokens per main run. Pressing ahead burns SC#6 headroom for zero diagnostic gain — the cost root cause is already understood, and the brief-quality variable is independent of cache state.
+
+**Unblock options re-evaluated:**
+
+- **(b) BYOK Anthropic-direct (recommended).** Wire Letta against `ANTHROPIC_API_KEY` directly instead of `OPENROUTER_API_KEY`; switch model handles from `openrouter/anthropic/claude-{opus-4.7,sonnet-4.6}` to the native `anthropic/claude-*` handles (exact slugs verified against Letta's model registry post-switch). Letta's `anthropic_client.py` emits `cache_control` correctly today — verified by upstream code-grep (C-3) and externally benched: the `pi` harness on the same OpenRouter key + same workload reports `CachedInputTokens` 23,536 at turn 2 for $0.009, vs Letta-via-OpenRouter at $0.061 for the same turn (numbers from the #3351 issue body). Trade-off: lose OpenRouter's failover and the per-workspace cost dashboard the spike has been using. The dashboard loss matters operationally — re-instrument with OpenTelemetry → Anthropic-native usage counters before Run 2 kickoff.
+- **(a) Patch `openai_client.py` to inject `cache_control` markers** — still viable as a bind-mount alongside the existing `letta-patches/url_validation.py`. Riskier: we'd carry a forked code path for the spike duration, and any image bump invalidates it. Hold as fallback if (b) hits a snag.
+- **(c) Wait for the upstream fix.** Issue is freshly filed with no triage label yet. Not a viable timeline.
+- **(d) Swap the local container for Letta Cloud — does NOT unblock.** Letta Cloud runs the same `letta-ai/letta` server code (OSS repo, just hosted); the `cache_control` logic still lives only in `anthropic_client.py`. Routing `openrouter/anthropic/*` through Cloud bypasses caching identically to local. Cloud would help **only if combined with the same BYOK + native-handle switch as (b)** — but that switch works on the local container at zero added cost or networking friction.
+
+**Cloud-specific frictions surfaced by the evaluation** (in case Cloud is desired for other reasons later — managed postgres, SLA, multi-host scale):
+
+- **MCP networking is the hard blocker.** Letta Cloud reaches MCPs over `streamable_http` / `SSE` on the public internet. Our 3 sidecars (`nextcloud-mcp-em`, `nextcloud-mcp-researcher`, `researcher-web-mcp`) listen on the local `spike` Docker bridge only. Exposing each would require Cloudflare Tunnel / ngrok / Tailscale Funnel per sidecar + auth-token wiring; per-call latency moves from local-bridge µs to public-internet ms; tunnel reliability becomes a new failure surface during the agent loop. Docs do not list a private-network bridge.
+- **MCP tool-name dedup likely still applies.** Same MCP registry code as self-hosted. The v1 API migration guide introduces an optional `project_id` for resource scoping that *may* namespace per project, but the docs don't claim it isolates tool-name collisions. The per-agent-Letta architecture (C-1) likely needs to persist as multiple Cloud agents or multiple projects, not a singleton.
+- **Cost overhead.** API Plan is **$20/mo + $0.10/active-agent-month + $0.00015/sec server-tool CPU + LLM pass-through** ([pricing](https://docs.letta.com/guides/build-with-letta/pricing)). Pure overhead given the cache bug is not actually fixed by the swap.
+- **Auth + schema swap.** `LETTA_SERVER_PASSWORD` → `LETTA_API_KEY`; base URL `http://127.0.0.1:8283` → `https://api.letta.com`; `letta-client` SDK version must match Cloud's API version per the v1 migration guide. Surfacing here so it's not surprising on the day we *do* migrate for a different reason.
+
+**Conclusion.** Cloud is a non-trivial migration that does not address the cost bug motivating it. Pick (b). Cloud stays parked as a future option once #3351 is upstream-fixed and we have a reason to move off local — managed postgres, multi-host scale, SLA — not as a Run 2 unblock.
+
+**Implication for Run 1-bis.** The original premise (A/B against Letta Cloud's `letta/auto-*` managed handles for cache-hit signal) is invalidated — Cloud bypasses the same code path. Replace with **Run 1-anthropic-direct**: identical 2-agent EM+Researcher workload, identical prompts, but Letta wired to native Anthropic via `ANTHROPIC_API_KEY` + native `anthropic/claude-*` handles. Purpose: confirm cache hits land via Letta's native path on the spike's actual workload shape before a 4-agent rewire. Lands as a new row in [t5-run-ledger.md](t5-run-ledger.md) + [t7-spike-cost.md](t7-spike-cost.md).
+
 ## Cost — first OpenRouter trendline (and what it means for SC#6)
 
 **Direct datum (OpenRouter hourly export, 2026-05-22 00:00 and 01:00 UTC buckets — all Run 1 activity falls inside these two hours):**
@@ -220,7 +244,7 @@ What a grader could legitimately push on:
 | G-3 | `#team` analyst membership mid-run change | Run 1 removed analyst-a from `#team`; the room is currently `em + researcher + admin` (see room snapshot at run end) | Re-add analyst-a, add analyst-b, verify all 4 agents see all 4 as participants before kickoff |
 | G-3.5 | Talk room history bleeds across runs (C-5 above) | Run 1-redo showed agents reconstruct deliverables from preserved Talk history via `talk_get_messages`. Run 2 with the same room tokens inherits Run 1's research bundles + brief as substrate, contaminating the "fresh 4-agent run" surface | Truncate `#team`, `EM-Researcher`, `EM-A`, `EM-B`, `A-B`, `A-Researcher`, `B-Researcher` to zero messages **OR** delete and recreate the rooms with new tokens before Run 2 kickoff. Verify via `talk_get_messages(token)` returning `[]` for each room before driver start |
 | G-4 | Driver state file carries Run 1's last-seen IDs | Run 2 tick 1 would start advanced past pre-Run-1 history; if Run 2 reuses room tokens, EM will not be re-woken with msg 279 (Run 1's `brief final`) — that's actually the right behavior, but the driver state should be reset to zero so any kickoff messages get delivered cleanly | Truncate `driver-state.local`; rotate or archive `driver.log` |
-| G-5 | OpenRouter cap | Default $100 ate Run 1 with margin; Run 2 with 2× agents and longer wall-time will likely need $200+ | Pre-raise cap to $300 before Run 2 kickoff; or use a fresh dedicated key |
+| G-5 | Inference path + cost cap | Run 2 as-currently-wired (OpenRouter routing) is blocked on [letta-ai/letta#3351](https://github.com/letta-ai/letta/issues/3351) per **C-6 above** — broken `cache_control` injection on the OpenAI-compatible path makes Run 2 ~24% over budget. Letta Cloud does not unblock (same code path). | Adopt option (b) from C-6: switch Letta to native Anthropic via `ANTHROPIC_API_KEY` + `anthropic/claude-*` handles before Run 2 kickoff. Run **Run 1-anthropic-direct** as the verification A/B first. If staying on OpenRouter as fallback, raise the cap to $300 — but native-Anthropic path is the recommended unblock. |
 | G-6 | Brief stored separately from t8-sample-brief.md | Run 1's brief is under `run1-artifacts/`; SC#5's referenced location is `t8-sample-brief.md` | Decision: keep Run 1 under run1-artifacts (it's not the SC#5 artifact); Run 2's brief lands in t8-sample-brief.md as planned |
 | G-7 | Forced SPOF test (kill -9 Letta) not exercised | Per [t5-run-ledger.md](t5-run-ledger.md) "Forced SPOF" section + D7 + T6, Run 2 should observe reconnect / catch-up after a Letta kill | Schedule the kill at ~50% of Run 2's wall-clock; capture pre/post agent state |
 | G-8 | Polling driver still synthronous; no [letta-mcp-channel](https://github.com/vezzadev/letta-mcp-channel) integration | Out of scope for the spike; flagged here so it's traceable | Track on the v1 roadmap, not on Run 2 |
@@ -237,8 +261,9 @@ What a grader could legitimately push on:
 
 ## What changes for Run 2
 
+- **Switch inference from OpenRouter to native Anthropic (C-6 option b).** Wire `ANTHROPIC_API_KEY` into `bring-up.sh`; swap model handles in `wire-run-1.py` from `openrouter/anthropic/claude-{opus-4.7,sonnet-4.6}` to the equivalent native `anthropic/claude-*` slugs; verify `cache_control` markers land on the wire by inspecting one outbound payload via the spike's debug logging (or the `pi`-harness-style turn-2 cache-hit check); land a verification A/B as **Run 1-anthropic-direct** before booting Run 2.
 - Wire 4 agents (add Analyst A + Analyst B Letta containers + MCP sidecars, uncomment the stubs in `docker-compose.yml`).
-- Reset driver state file; rotate driver.log; increase OpenRouter cap.
+- Reset driver state file; rotate driver.log.
 - Add explicit memory blocks (`human` + `persona`) on agent create.
 - Re-add analyst-a to `#team`; add analyst-b; create the 5 remaining pair-DM rooms.
 - Run 2's brief lands at `t8-sample-brief.md`; run-ledger row + cost row populated as it runs.

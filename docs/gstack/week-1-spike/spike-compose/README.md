@@ -18,6 +18,15 @@ Parent: [../README.md](../README.md) · Spec: [../../design/05-implementation.md
 - `wire-run-1.py` / `probe-tools.py` — pre-boot prompt-hash + banned-token gate, per-agent Letta wiring, and synthetic tool-exec probe.
 - `.gitignore` — keeps `.env`, `squid/` operational files, and `researcher-web-mcp/audit/` out of git. `*.local` is matched by the repo-root `.gitignore` (defense in depth).
 - `squid/` (optional second-layer, not currently wired) — `squid.conf` + `blocklist.txt` if a future non-Firecrawl egress surface needs proxy-level enforcement on top of the wrapper.
+- `Dockerfile.letta` — derived Letta image with OpenTelemetry auto-instrumentation for the Anthropic SDK (gen_ai.* spans including cache_creation_input_tokens and cache_read_input_tokens). Builds locally when the OTel overlay is used.
+- `docker-compose.otel.yml` — optional overlay adding an OTel Collector and switching the Letta services to the derived image. Use via `./bring-up.sh -f docker-compose.yml -f docker-compose.otel.yml up -d ...`. Standalone-base usage (without `-f docker-compose.otel.yml`) gets the original behavior with zero observability overhead.
+- `otel-collector/config.yaml` — Collector config fanning out to Azure Monitor (Application Insights connection string from `azure-appinsights.local`) and stdout for local debug. Strips `gen_ai.prompt` / `gen_ai.completion` content at the processor stage as defense-in-depth.
+- `azure-appinsights.local` (gitignored) — full App Insights connection string, one line.
+- `anthropic.local` (gitignored) — raw Anthropic API key for the C-6 native-Anthropic-client unblock path (recommended Run 2 wiring).
+- `kql/` — App Insights KQL queries:
+  - `01-verify-anthropic-events.kql` — smoke check after first request; confirms gen_ai.* spans land with cache token attributes.
+  - `02-route-comparison.kql` — apples-to-apples union of OpenRouter Broadcast events with Anthropic-native OTel events. Adjust the OpenRouter branch's field names to whatever your Broadcast pipeline emits.
+  - `03-per-agent-cost.kql` — per-`cloud_RoleName` token + cost breakdown derived from telemetry; mirrors the shape of [../t7-spike-cost.md](../t7-spike-cost.md) "Per-run cost".
 
 ## Researcher web-fetch wrapper
 
@@ -52,6 +61,30 @@ Example:
 ./bring-up.sh logs -f letta
 ./bring-up.sh down
 ```
+
+## Observability overlay (optional — for Run 1-anthropic-direct + Run 2)
+
+When the OTel overlay is in the `-f` chain, the two Letta containers are built from `Dockerfile.letta` (base + opentelemetry-instrumentation-anthropic + ancillary OTel) and an `otel-collector` service joins the `spike` network. Per-request `gen_ai.*` spans (including `gen_ai.usage.cache_read_input_tokens` and `gen_ai.usage.cache_creation_input_tokens`) flow OTel → Azure Monitor → App Insights — same destination as the OpenRouter Broadcast → OTel pipeline, so the KQL queries in `kql/` can union both routes for direct comparison.
+
+```
+# One-time: stash the App Insights connection string and Anthropic key
+printf '%s' 'InstrumentationKey=...;IngestionEndpoint=https://...;LiveEndpoint=https://...' > azure-appinsights.local
+printf '%s' 'sk-ant-...' > anthropic.local
+chmod 600 azure-appinsights.local anthropic.local
+
+# Build the derived Letta image
+./bring-up.sh -f docker-compose.yml -f docker-compose.otel.yml build letta-em letta-researcher
+
+# Bring up with OTel
+./bring-up.sh -f docker-compose.yml -f docker-compose.otel.yml up -d \
+    otel-collector letta-em letta-researcher \
+    nextcloud-mcp-em nextcloud-mcp-researcher researcher-web-mcp
+
+# After wire-run-1.py + first ping → verify in App Insights:
+#   kql/01-verify-anthropic-events.kql  (expect 1+ rows, gen_ai.system=anthropic)
+```
+
+To revert to the no-OTel base, drop `-f docker-compose.otel.yml` from invocations — the base compose still works unchanged.
 
 ## Run 1 readiness gates (post-swap to EM + Researcher)
 
