@@ -240,7 +240,7 @@ Both should land in a small follow-up PR before the 4-agent gating run:
 
 First 4-agent boot. Driver up 5400s cap / 600s tick, all 4 agents wired, native Anthropic, OTel-instrumented. Halted at T+67 min. Cap not reached.
 
-**Decision (2026-05-23): halt entirely; do not restart until F-8 (upstream Letta summarizer bug) is resolved.** F-7 share fix was applied + analyst work migrated into admin's `/agents/` so the analyses aren't lost. Letta + MCP + OTel containers stopped; Nextcloud + db left up for post-run review. The "Open items before Run 2-4agent-attempt-2" list below is a future-state checklist, not a here-and-now plan.
+**Decision (2026-05-23): halt entirely; do not restart until F-8 (originally suspected upstream, now reattributed to Roster-side OTel auto-instrumentation — see addendum below) is resolved.** F-7 share fix was applied + analyst work migrated into admin's `/agents/` so the analyses aren't lost. Letta + MCP + OTel containers stopped; Nextcloud + db left up for post-run review. The "Open items before Run 2-4agent-attempt-2" list below is a future-state checklist, not a here-and-now plan.
 
 **Topline.** Tick mechanism proved itself in production — fired 11 times across all 4 agents (F-6 no longer "wired-but-unproven"). Both findings below are independent of the tick.
 
@@ -261,7 +261,7 @@ This compounded the coordination tempo collapse: agents kept producing work loca
 
 Fix: extend the admin → em + researcher share to also include analyst-a + analyst-b with permission=31 (read+write+delete+share). One-shot via OCS Sharing API (no `occ share:create` exists). Pre-restart cleanup also needs to migrate the siloed work into admin's `/agents/`.
 
-**F-8. Letta upstream summarizer bug — `async_generator` not an async context manager (NOT trivially fixable).**
+**F-8. Letta summarizer crash — `async_generator` not an async context manager (originally suspected upstream; addendum below reattributes to Roster-side OTel instrumentation).**
 
 Symptom: `letta-researcher` + `letta-analyst-a` both crashed during context summarization (when conversation history grew large enough to trigger the summarizer):
 
@@ -277,17 +277,27 @@ Affected: Letta 0.16.8 image (`spike-compose-letta-otel:latest` derived from ups
 
 Impact during the run: the agent loop crashed mid-step but Letta logged `Step Progression: FINISHED` and the run record persisted; subsequent ticks still hit Letta cleanly and returned partial results, but the agent could not compact its context (so kept growing it on every tick — costlier per call, and risks an eventual hard context-length exceeded).
 
-Net: this is a Letta-side bug in the streaming interface, not a Roster fix. Two workarounds available:
+### F-8 addendum (2026-05-23, post-halt isolation repro) — reattribution to Roster-side OTel
 
-(a) Bump Letta to a version where the streaming interface treats `stream` as `await async_generator.__anext__()` (or whatever the upstream patch turns out to be). Requires checking newer images / changelog for a relevant fix.
+Per `run_failure_recovery_policy` the bug was first written up as upstream Letta. A standalone repro (`spike-compose/repro-f8.py`) ran the identical scenario against three images, single agent, `context_window_limit=32000`, 8 turns × ~12K-char filler each (~$1.20 burned over ~25 min):
 
-(b) Disable the summarizer / set context limits high enough that summarization never kicks in within a 90-min cap. Letta config knobs not yet enumerated for this; would need to inspect the `summarizer_mode` / `recall_memory` toggles.
+| Image | `opentelemetry-instrumentation-anthropic` | Summarizer outcome |
+|---|---|---|
+| `letta/letta:latest` (vanilla, no OTel) | none | compacts cleanly — "Summarized 5: # Summary of Evicted Messages" |
+| `spike-compose-letta-otel:latest` | `0.45.0` (Roster pin) | crash: `'async_generator' object does not support the asynchronous context manager protocol` |
+| custom rebuild w/ instr bumped | `0.60.0` (latest) | crash: `'AnthropicAsyncStream' object does not support the asynchronous context manager protocol` |
 
-Per `upstream_research_isolation` memory: not filing an issue without explicit ask.
+Conclusion: the bug is **not** upstream Letta. It's `opentelemetry-instrumentation-anthropic` wrapping `client.beta.messages.create(stream=True)` such that the returned object no longer supports the `async with` protocol Letta's summarizer streaming interface requires. Bumping the instrumentation from 0.45.0 → 0.60.0 changed the wrapper type (`async_generator` → `AnthropicAsyncStream`) but did not restore the async-context-manager interface.
+
+Vanilla `letta/letta:latest` — same Letta code, no OTel — handles the same workload cleanly. So this is a Roster-side observability-stack incompatibility, not a Letta-side defect.
+
+Fix path (not applied in this PR per user direction): remove `opentelemetry-instrumentation-anthropic` from `Dockerfile.letta`; keep `opentelemetry-instrumentation-httpx` + `opentelemetry-instrumentation-fastapi`. Lose: Anthropic-specific `gen_ai.*` span attributes in App Insights. Keep: per-agent HTTP traces + FastAPI request spans. Restart Run 2 only after this lands.
+
+Per `upstream_research_isolation` memory: not filing an issue upstream — there's nothing to file, the bug is on our side.
 
 ## Open items before Run 2-4agent-attempt-2
 
 1. **Pre-restart: extend `/agents/` share to all 4 agent users** with permission=31 via OCS Sharing API, and migrate analyst-a + analyst-b's siloed work into admin's `/agents/` so the analyses aren't lost.
-2. **Decide on Letta summarizer bug**: (a) bump Letta version, (b) raise context window via config, (c) accept as known risk and let the run proceed until either the bug bites again or the workload finishes within the unsummarized window.
+2. **Apply F-8 fix**: drop `opentelemetry-instrumentation-anthropic` from `Dockerfile.letta` (the F-8 addendum repro confirmed it's the OTel anthropic wrapper, not upstream Letta). httpx + fastapi instrumentation stays.
 3. **Standardize provisioning**: extend `provision-analyst-b.sh` (or `setup-run-2-talk-rooms.py`) to also set up the share. Future runs shouldn't depend on Run 1-era share state surviving wipes.
 4. **Run 1's share was admin → em + researcher.** Document this for any future bring-up: a Run 2 4-agent rerun from a clean Nextcloud needs the share created from scratch, not just extended.
