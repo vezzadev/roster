@@ -11,4 +11,7 @@ exclude_path = [
   "dist",
   "tmp",
   "coverage.html",
+  # Concatenation of Run 1 spike artifacts (brief.md + t5-run-1-conclusions.md)
+  # — inherits relative links that don't resolve from inside caching-bench/.
+  "docs/gstack/week-1-spike/caching-bench/workload.md",
 ]
