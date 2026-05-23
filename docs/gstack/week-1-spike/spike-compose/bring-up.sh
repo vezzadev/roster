@@ -50,4 +50,19 @@ AZURE_MONITOR_CONNECTION_STRING="$([ -r azure-appinsights.local ] && tr -d '\n' 
 export ANTHROPIC_API_KEY
 ANTHROPIC_API_KEY="$([ -r anthropic.local ] && tr -d '\n' < anthropic.local || true)"
 
+# Modal credentials for Letta's tool-sandbox runtime. Both tokens must be present
+# for `ToolSettings.modal_sandbox_enabled` to flip True; absent → falls back to
+# `SandboxType.LOCAL` (in-Letta-process tool execution, no isolation). File is
+# two lines (`MODAL_TOKEN_ID=…` + `MODAL_TOKEN_SECRET=…`), sourced rather than
+# read line-by-line so we don't have to parse it ourselves. Tolerant: only
+# required when registering Python tools that should run sandboxed (e.g. the
+# web_scrape / web_search rewrite that retires researcher-web-mcp).
+export MODAL_TOKEN_ID MODAL_TOKEN_SECRET
+if [ -r modal.local ]; then
+    set -a
+    # shellcheck disable=SC1091
+    . ./modal.local
+    set +a
+fi
+
 exec docker compose "$@"
