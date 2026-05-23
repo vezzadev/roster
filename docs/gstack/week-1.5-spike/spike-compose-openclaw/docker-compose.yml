@@ -1,0 +1,99 @@
+# Week 1.5 spike compose — OpenClaw runtime, 4-agent team in ONE Gateway.
+#
+# Per openclaw-facts.md, OpenClaw hosts multiple agents in a single Gateway
+# via agents.list[] in openclaw.json. That's the correct topology — not 4
+# Gateways. Half the compose surface area and matches OpenClaw's design intent.
+#
+# Status: skeleton. Lines marked `# TBD` need final verification at T3'.
+
+services:
+
+  openclaw-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
+      args:
+        OPENCLAW_VERSION: ${OPENCLAW_VERSION:-2026.4.0}  # TBD: pin to CHANGELOG-verified CVE-patched version
+    container_name: openclaw-gateway
+    restart: unless-stopped
+    environment:
+      # Anthropic native — sidesteps OpenRouter #3351, gets structural prompt caching.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set in .env}
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:?}
+
+      # OpenClaw paths. openclaw.json is hot-reloaded by the Gateway, so
+      # editing the file in agents/ on host triggers config refresh in container.
+      OPENCLAW_CONFIG_PATH: /workspace/openclaw.json
+
+      # OTel — auto-instrumentations load via NODE_OPTIONS in Dockerfile.
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SERVICE_NAME: openclaw-gateway
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=week-1.5-spike"
+    volumes:
+      - ./agents:/workspace                # holds openclaw.json + per-agent workspace dirs
+      - openclaw-state:/root/.openclaw     # ~/.openclaw — auth profiles, sessions, etc.
+    ports:
+      # Control plane on :18789. Bound to docker network — no host exposure
+      # by default. Comment back in if local debugging is needed via Control UI.
+      # - "127.0.0.1:18789:18789"
+      []
+    networks: [spike]
+    depends_on:
+      - nextcloud
+      - nextcloud-mcp
+      - researcher-web-mcp
+      - otel-collector
+
+  # ─── Shared infra (reused from Week 1) ─────────────────────────────────────
+
+  nextcloud:
+    image: nextcloud:30  # TBD: match Week 1's spike-compose tag
+    container_name: nextcloud
+    environment:
+      NEXTCLOUD_ADMIN_USER: ${NEXTCLOUD_ADMIN_USER:?}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NEXTCLOUD_ADMIN_PASSWORD:?}
+    volumes:
+      - nextcloud-data:/var/www/html
+    ports:
+      - "8080:80"
+    networks: [spike]
+
+  nextcloud-mcp:
+    # cbcoutinho/nextcloud-mcp-server — adopted in Week 1 T4. Stdio-only deployment
+    # means OpenClaw must launch it as a child process via `command`/`args` in
+    # openclaw.json mcp.servers config, NOT as a separate container.
+    # Listing here only if a sidecar is needed for shared state; otherwise delete
+    # this service and configure stdio directly in agents/openclaw.json.
+    # TBD: confirm during T3' whether sidecar or stdio child-process is better.
+    image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest  # TBD: pin
+    container_name: nextcloud-mcp
+    environment:
+      NEXTCLOUD_URL: http://nextcloud:80
+    depends_on: [nextcloud]
+    networks: [spike]
+
+  researcher-web-mcp:
+    build:
+      context: ../../week-1-spike/spike-compose/researcher-web-mcp
+    container_name: researcher-web-mcp
+    environment:
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:?}
+    networks: [spike]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:latest  # TBD: pin to Week 1 tag
+    container_name: otel-collector
+    volumes:
+      - ../../week-1-spike/spike-compose/otel-collector/config.yaml:/etc/otelcol-contrib/config.yaml:ro
+    environment:
+      APPLICATIONINSIGHTS_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING:?}
+    networks: [spike]
+
+volumes:
+  openclaw-state:
+  nextcloud-data:
+
+networks:
+  spike:
+    driver: bridge
