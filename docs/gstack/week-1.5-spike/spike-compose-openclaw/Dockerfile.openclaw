@@ -4,7 +4,7 @@
 # docs.openclaw.ai/install/installer. The install.sh wrapper is for laptops;
 # we want a deterministic npm install for reproducible Docker builds.
 
-ARG OPENCLAW_VERSION=2026.4.0
+ARG OPENCLAW_VERSION=2026.5.20
 
 # Node 24 is OpenClaw's default per docs/install/installer; Node 22.19+ supported.
 FROM node:24-bookworm-slim AS base
@@ -18,17 +18,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # defaults this. We match for parity.
 ENV SHARP_IGNORE_GLOBAL_LIBVIPS=1
 
-# ─── OpenClaw + OTel auto-instrumentations ─────────────────────────────────
+# ─── OpenClaw ──────────────────────────────────────────────────────────────
 ARG OPENCLAW_VERSION
-RUN npm install -g \
-      openclaw@${OPENCLAW_VERSION} \
-      @opentelemetry/auto-instrumentations-node \
-      @opentelemetry/api \
-      @opentelemetry/sdk-node \
- && openclaw --version
+RUN npm install -g openclaw@${OPENCLAW_VERSION} && openclaw --version
 
-# Load OTel auto-instrumentations on every Node process the container spawns.
-ENV NODE_OPTIONS="--require @opentelemetry/auto-instrumentations-node/register"
+# OpenClaw emits gen_ai.* spans natively via its `diagnostics-otel` plugin
+# (see docs/gateway/opentelemetry.md inside the package). The generic
+# @opentelemetry/auto-instrumentations-node bundle only ships HTTP/dns/undici
+# instrumentations — it does not produce gen_ai semantic-convention spans for
+# Anthropic, so we rely on OpenClaw's first-party plugin instead.
+RUN openclaw plugins install clawhub:@openclaw/diagnostics-otel --pin
 
 # ─── Workspace ─────────────────────────────────────────────────────────────
 WORKDIR /workspace
