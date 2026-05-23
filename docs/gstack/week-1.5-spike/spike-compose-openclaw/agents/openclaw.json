@@ -1,0 +1,107 @@
+// OpenClaw multi-agent config for Week 1.5 spike.
+// JSON5 (comments + trailing commas OK), schema-strict on the server side.
+// Hot-reloads on file write per docs.openclaw.ai/gateway/configuration.
+//
+// One Gateway hosts all four agents per the multi-agent pattern in
+// docs.openclaw.ai/gateway/configuration "Configure multi-agent routing".
+//
+// Status: SKELETON. Some values are placeholders to fill at T3' kickoff.
+{
+  // ─── Models ──────────────────────────────────────────────────────────────
+  agents: {
+    defaults: {
+      workspace: "/workspace/_default",
+      model: {
+        primary: "anthropic/claude-opus-4-7",     // EM model
+        // Per-agent overrides set on agents.list[] below.
+      },
+      models: {
+        // 1-hour cache by default; the spike's 4-agent run produces enough
+        // re-use to justify long-cache pricing. F-O5 may dial this per-agent.
+        "anthropic/claude-opus-4-7":   { params: { cacheRetention: "long" } },
+        "anthropic/claude-sonnet-4-6": { params: { cacheRetention: "long" } },
+        "anthropic/claude-haiku-4-5":  { params: { cacheRetention: "short" } },
+      },
+      // Heartbeat fallback only — message events drive the primary wake.
+      // See openclaw-facts.md §"Open question 2".
+      heartbeat: { every: "30m", target: "none" },
+      // No skills — built-in tools + MCP only. See openclaw-facts.md §"Open question 4".
+      skills: [],
+    },
+
+    list: [
+      {
+        id: "em",
+        default: true,
+        workspace: "/workspace/em",
+        model: { primary: "anthropic/claude-opus-4-7" },
+        // Senior synthesizer; gets the heaviest model.
+      },
+      {
+        id: "senior-a",
+        workspace: "/workspace/senior-a",
+        model: { primary: "anthropic/claude-sonnet-4-6" },
+      },
+      {
+        id: "senior-b",
+        workspace: "/workspace/senior-b",
+        model: { primary: "anthropic/claude-sonnet-4-6" },
+      },
+      {
+        id: "researcher",
+        workspace: "/workspace/researcher",
+        model: { primary: "anthropic/claude-sonnet-4-6" },
+      },
+    ],
+  },
+
+  // ─── Inbound env (substituted into config strings) ────────────────────────
+  env: {
+    ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}",
+    FIRECRAWL_API_KEY: "${FIRECRAWL_API_KEY}",
+  },
+
+  // ─── MCP servers ──────────────────────────────────────────────────────────
+  // Per openclaw-facts.md §"Open question 1": stdio is the mature path.
+  // streamable-http exists (since 2026.3.31) but T4' tests stdio first.
+  mcp: {
+    servers: {
+      nextcloud: {
+        // TBD T3': confirm command surface for cbcoutinho/nextcloud-mcp-server
+        // stdio invocation. May need a wrapper script if the upstream image
+        // assumes HTTP.
+        command: "uvx",
+        args: ["nextcloud-mcp-server"],
+        env: {
+          NEXTCLOUD_URL: "http://nextcloud:80",
+          NEXTCLOUD_USER: "${NEXTCLOUD_ADMIN_USER}",
+          NEXTCLOUD_PASS: "${NEXTCLOUD_ADMIN_PASSWORD}",
+        },
+      },
+      researcher_web: {
+        // researcher-web-mcp is in-repo; spawn it as stdio child process.
+        // TBD T3': confirm the entrypoint path inside the Gateway container.
+        command: "node",
+        args: ["/opt/researcher-web-mcp/bin/server.js"],
+        env: { FIRECRAWL_API_KEY: "${FIRECRAWL_API_KEY}" },
+      },
+    },
+  },
+
+  // ─── Channels — Nextcloud Talk via MCP, not native channel ────────────────
+  // OpenClaw's built-in channels list (WhatsApp, Telegram, Slack, Discord…)
+  // doesn't include Nextcloud Talk. The spike treats Talk as a *tool*
+  // accessed via the nextcloud MCP server, NOT a channel.
+  // Inter-agent coordination still goes through Talk; OpenClaw native channels
+  // are unused in the spike.
+  channels: {},
+
+  // ─── Bindings — N/A when not using native channels ────────────────────────
+  bindings: [],
+
+  // ─── Gateway server ───────────────────────────────────────────────────────
+  gateway: {
+    port: 18789,
+    reload: { mode: "hybrid" },
+  },
+}

@@ -1,0 +1,40 @@
+# OpenClaw Gateway container.
+#
+# Install path is `npm install -g openclaw@<version>` per
+# docs.openclaw.ai/install/installer. The install.sh wrapper is for laptops;
+# we want a deterministic npm install for reproducible Docker builds.
+
+ARG OPENCLAW_VERSION=2026.4.0
+
+# Node 24 is OpenClaw's default per docs/install/installer; Node 22.19+ supported.
+FROM node:24-bookworm-slim AS base
+
+# ─── System deps ───────────────────────────────────────────────────────────
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git ca-certificates curl \
+ && rm -rf /var/lib/apt/lists/*
+
+# Avoid sharp building against system libvips — per docs, OpenClaw installer
+# defaults this. We match for parity.
+ENV SHARP_IGNORE_GLOBAL_LIBVIPS=1
+
+# ─── OpenClaw + OTel auto-instrumentations ─────────────────────────────────
+ARG OPENCLAW_VERSION
+RUN npm install -g \
+      openclaw@${OPENCLAW_VERSION} \
+      @opentelemetry/auto-instrumentations-node \
+      @opentelemetry/api \
+      @opentelemetry/sdk-node \
+ && openclaw --version
+
+# Load OTel auto-instrumentations on every Node process the container spawns.
+ENV NODE_OPTIONS="--require @opentelemetry/auto-instrumentations-node/register"
+
+# ─── Workspace ─────────────────────────────────────────────────────────────
+WORKDIR /workspace
+VOLUME ["/workspace", "/root/.openclaw"]
+
+EXPOSE 18789
+
+# Gateway runs in foreground. Container lifecycle = Gateway lifecycle.
+ENTRYPOINT ["openclaw", "gateway", "--port", "18789"]
