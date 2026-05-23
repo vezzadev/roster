@@ -169,37 +169,37 @@ services:
       - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
     networks: [spike]
 
-  # ─── Run 2 only — uncomment alongside the matching nextcloud-mcp-<role> sidecars
-  #
-  # letta-analyst-a:
-  #   image: letta/letta:latest
-  #   restart: unless-stopped
-  #   ports:
-  #     - "127.0.0.1:8285:8283"
-  #   environment:
-  #     OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-  #     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-  #     SECURE: "true"
-  #     LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
-  #   volumes:
-  #     - letta_analyst_a_data:/root/.letta
-  #     - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
-  #   networks: [spike]
-  #
-  # letta-analyst-b:
-  #   image: letta/letta:latest
-  #   restart: unless-stopped
-  #   ports:
-  #     - "127.0.0.1:8286:8283"
-  #   environment:
-  #     OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
-  #     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-  #     SECURE: "true"
-  #     LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
-  #   volumes:
-  #     - letta_analyst_b_data:/root/.letta
-  #     - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
-  #   networks: [spike]
+  letta-analyst-a:
+    image: letta/letta:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8285:8283"
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      SECURE: "true"
+      LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
+    volumes:
+      - letta_analyst_a_data:/root/.letta
+      - letta_analyst_a_pgdata:/var/lib/postgresql/data
+      - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
+    networks: [spike]
+
+  letta-analyst-b:
+    image: letta/letta:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8286:8283"
+    environment:
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      SECURE: "true"
+      LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
+    volumes:
+      - letta_analyst_b_data:/root/.letta
+      - letta_analyst_b_pgdata:/var/lib/postgresql/data
+      - ./letta-patches/url_validation.py:/app/letta/helpers/url_validation.py:ro
+    networks: [spike]
 
   # MCP sidecars. The cbcoutinho image (AGPL-3.0, per ../t4-mcp-investigation.md
   # "Decision") authenticates as a single Nextcloud user via NEXTCLOUD_USERNAME +
@@ -268,18 +268,18 @@ services:
       NEXTCLOUD_PASSWORD: ${RESEARCHER_APP_TOKEN:?run ./bring-up.sh — sources ./researcher-token.local}
     networks: [spike]
 
-  # ─── Run 2 only — bring up after analyst-b exists in Nextcloud
-  # and the app token is stashed in ./analyst-b-token.local
-  #
-  # nextcloud-mcp-analyst-b:
-  #   image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
-  #   restart: unless-stopped
-  #   depends_on: [nextcloud]
-  #   environment:
-  #     NEXTCLOUD_HOST: http://nextcloud
-  #     NEXTCLOUD_USERNAME: analyst-b
-  #     NEXTCLOUD_PASSWORD: ${ANALYST_B_APP_TOKEN:?run ./bring-up.sh — sources ./analyst-b-token.local}
-  #   networks: [spike]
+  # Requires ./analyst-b-token.local (provision analyst-b in Nextcloud + stash
+  # the app token before `docker compose up`; otherwise this service fails fast
+  # on the unbound ANALYST_B_APP_TOKEN env var, which is the intended behavior).
+  nextcloud-mcp-analyst-b:
+    image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
+    restart: unless-stopped
+    depends_on: [nextcloud]
+    environment:
+      NEXTCLOUD_HOST: http://nextcloud
+      NEXTCLOUD_USERNAME: analyst-b
+      NEXTCLOUD_PASSWORD: ${ANALYST_B_APP_TOKEN:?run ./bring-up.sh — sources ./analyst-b-token.local}
+    networks: [spike]
 
   # ─── Run 2 only — uncomment + verify before booting Run 2 ────────────────
   #
@@ -312,7 +312,7 @@ volumes:
   letta_researcher_data:
   letta_em_pgdata:
   letta_researcher_pgdata:
-  # letta_analyst_a_data:  # Run 2
-  # letta_analyst_b_data:  # Run 2
-  # letta_analyst_a_pgdata:  # Run 2
-  # letta_analyst_b_pgdata:  # Run 2
+  letta_analyst_a_data:
+  letta_analyst_b_data:
+  letta_analyst_a_pgdata:
+  letta_analyst_b_pgdata:

@@ -49,9 +49,19 @@ LOG_PATH = SPIKE / "driver.log"
 # Rooms to relay, with the set of participant agents that should be woken.
 # Room tokens come from t5-env-manifest.md "Talk rooms" line. Founder (operator)
 # is not an agent — only the agent participants are listed below.
+# Run 2 (4-agent) DM tokens are populated by the bring-up Talk-room creation
+# script — leave the __TBD_*__ placeholders here; the driver will refuse to
+# start (OCS will 404 on the missing room) until they're filled in. The #team
+# token below is reused from Run 1-anthropic-direct; bring-up.sh decides
+# whether to reset Talk history per G-3.5 (truncate vs recreate) before kickoff.
 ROOMS = [
-    {"token": "ygeug4an", "name": "#team",         "agent_actors": {"em", "researcher"}},
-    {"token": "fz99hp5a", "name": "EM-Researcher", "agent_actors": {"em", "researcher"}},
+    {"token": "ygeug4an",        "name": "#team",         "agent_actors": {"em", "researcher", "analyst-a", "analyst-b"}},
+    {"token": "fz99hp5a",        "name": "EM-Researcher", "agent_actors": {"em", "researcher"}},
+    {"token": "__TBD_EM_A__",    "name": "EM-A",          "agent_actors": {"em", "analyst-a"}},
+    {"token": "__TBD_EM_B__",    "name": "EM-B",          "agent_actors": {"em", "analyst-b"}},
+    {"token": "__TBD_A_B__",     "name": "A-B",           "agent_actors": {"analyst-a", "analyst-b"}},
+    {"token": "__TBD_A_R__",     "name": "A-Researcher",  "agent_actors": {"analyst-a", "researcher"}},
+    {"token": "__TBD_B_R__",     "name": "B-Researcher",  "agent_actors": {"analyst-b", "researcher"}},
 ]
 
 POLL_INTERVAL_S = 30
@@ -173,6 +183,16 @@ def _sig(*_):
 def main() -> int:
     signal.signal(signal.SIGINT, _sig)
     signal.signal(signal.SIGTERM, _sig)
+    # Filter out rooms whose tokens haven't been populated yet (TBD placeholders
+    # for Run 2 DMs that bring-up creates live). Don't poll them — OCS would
+    # 404 every tick and flood driver.log. Log once at start so the operator
+    # sees what's skipped.
+    global ROOMS
+    skipped = [r["name"] for r in ROOMS if r["token"].startswith("__TBD_")]
+    ROOMS = [r for r in ROOMS if not r["token"].startswith("__TBD_")]
+    if skipped:
+        print(f"NOTE: skipping rooms with unpopulated tokens: {skipped}", flush=True)
+
     state = load_state()
     started = time.time()
     # In-memory last-wake timestamp per agent (Talk-driven OR tick-driven).

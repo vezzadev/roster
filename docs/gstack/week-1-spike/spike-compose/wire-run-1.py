@@ -39,6 +39,8 @@ LETTA_TOKEN = pathlib.Path(__file__).parent.joinpath("letta.local").read_text().
 
 EXPECTED_HASHES = {
     "Engagement Manager (EM)": "e966a65548025d0dfe65ac52a24e4a855ec103de3a2223a966757f304f0ad40f",
+    "Senior Analyst A": "4f715306639f519af745e1df97455a5b99c9e99266069b60c5b01fdf8b01f447",
+    "Senior Analyst B": "318161ba9304020282608c4507760803dac43c4072421875f025498948710611",
     "Researcher": "2fff77b9103e233e7a7eea4728e90d668a42fd3e9e3d402c6ac7a86d29435d24",
 }
 
@@ -116,6 +118,54 @@ MEMORY_BLOCKS = {
             "description": "Who I am working for and how they communicate with me.",
         },
     ],
+    "analyst-a": [
+        {
+            "label": "persona",
+            "value": (
+                "I am Senior Analyst A. I do deep analytical work on threads "
+                "the EM assigns. I draft section files under /agents/ (named "
+                "for the thread I own), coordinate with Senior Analyst B in "
+                "the A-B DM when threads overlap, and request sources from "
+                "the Researcher when I need them. I do not fetch web "
+                "material myself."
+            ),
+            "description": "My own role, responsibilities, and how I operate.",
+        },
+        {
+            "label": "human",
+            "value": (
+                "I work under the Engagement Manager (EM). The EM assigns my "
+                "threads and integrates my output into /agents/brief.md. The "
+                "founder is upstream of the EM; I do not interact with the "
+                "founder directly."
+            ),
+            "description": "Who I am working for and how they communicate with me.",
+        },
+    ],
+    "analyst-b": [
+        {
+            "label": "persona",
+            "value": (
+                "I am Senior Analyst B. I do deep analytical work on threads "
+                "the EM assigns. I draft section files under /agents/ (named "
+                "for the thread I own), coordinate with Senior Analyst A in "
+                "the A-B DM when threads overlap, and request sources from "
+                "the Researcher when I need them. I do not fetch web "
+                "material myself."
+            ),
+            "description": "My own role, responsibilities, and how I operate.",
+        },
+        {
+            "label": "human",
+            "value": (
+                "I work under the Engagement Manager (EM). The EM assigns my "
+                "threads and integrates my output into /agents/brief.md. The "
+                "founder is upstream of the EM; I do not interact with the "
+                "founder directly."
+            ),
+            "description": "Who I am working for and how they communicate with me.",
+        },
+    ],
 }
 
 # Each role has its own Letta server URL + MCP sidecars. Each MCP is
@@ -149,6 +199,27 @@ ROLES = [
         "mcps": [
             ("nextcloud-researcher", "http://nextcloud-mcp-researcher:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
             ("researcher-web", "http://researcher-web-mcp:8000/mcp", RESEARCHER_WEB_TOOLS),
+        ],
+    },
+    # Senior Analysts: per design, only the Researcher has web access. Analysts
+    # synthesize from Researcher bundles + the EM's framing. They get only the
+    # Nextcloud MCP (Talk + WebDAV) on their own Letta.
+    {
+        "title": "Senior Analyst A",
+        "name": "analyst-a",
+        "model": "anthropic/claude-sonnet-4-6",
+        "letta_url": "http://127.0.0.1:8285",
+        "mcps": [
+            ("nextcloud-analyst-a", "http://nextcloud-mcp-analyst-a:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
+        ],
+    },
+    {
+        "title": "Senior Analyst B",
+        "name": "analyst-b",
+        "model": "anthropic/claude-sonnet-4-6",
+        "letta_url": "http://127.0.0.1:8286",
+        "mcps": [
+            ("nextcloud-analyst-b", "http://nextcloud-mcp-analyst-b:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
         ],
     },
 ]
