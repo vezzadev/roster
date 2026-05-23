@@ -35,12 +35,20 @@ Writes the resulting (agent_id, letta_url) pairs to ./run-2-agents.local
 
 import hashlib
 import json
+import os
 import pathlib
 import re
 import urllib.request
 
 PROMPTS_PATH = pathlib.Path(__file__).resolve().parents[1] / "t5-system-prompts.md"
 LETTA_TOKEN = pathlib.Path(__file__).parent.joinpath("letta.local").read_text().strip()
+
+# WIRE_AGENTS env var lets the operator restrict which roles get wired in
+# this run. Comma-separated subset of role `name` fields (em, analyst-a,
+# analyst-b, researcher). Empty / unset = wire all four. Used for the
+# 2-agent ablation re-run (e.g. WIRE_AGENTS=em,researcher) without editing
+# ROLES; the corresponding Letta containers + MCP sidecars must be up.
+WIRE_AGENTS = {a.strip() for a in os.environ.get("WIRE_AGENTS", "").split(",") if a.strip()}
 
 EXPECTED_HASHES = {
     "Engagement Manager (EM)": "e966a65548025d0dfe65ac52a24e4a855ec103de3a2223a966757f304f0ad40f",
@@ -288,7 +296,17 @@ def main():
     prompts_text = PROMPTS_PATH.read_text()
     agent_ids = {}
 
-    for role in ROLES:
+    if WIRE_AGENTS:
+        roles_to_wire = [r for r in ROLES if r["name"] in WIRE_AGENTS]
+        unknown = WIRE_AGENTS - {r["name"] for r in ROLES}
+        if unknown:
+            raise SystemExit(f"WIRE_AGENTS contains unknown role(s): {sorted(unknown)}; "
+                             f"valid: {[r['name'] for r in ROLES]}")
+        print(f"WIRE_AGENTS filter active — wiring only {[r['name'] for r in roles_to_wire]}")
+    else:
+        roles_to_wire = ROLES
+
+    for role in roles_to_wire:
         title = role["title"]
         letta_url = role["letta_url"]
         print(f"\n=== {title}  (letta @ {letta_url}) ===")
