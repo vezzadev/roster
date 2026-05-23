@@ -5,7 +5,7 @@ skill) when something is worth remembering.
 
 **Letta equivalent:** archival memory + recall memory, conflated. OpenClaw
 keeps it flat by default; if Run 1' shows brief quality below Run 1's
-`brief.md`, F-O3 escalation chain in [../../t2-openclaw-fallback.md](../../t2-openclaw-fallback.md)
+`brief.md`, F-O3 escalation chain in [../../../t2-openclaw-fallback.md](../../../t2-openclaw-fallback.md)
 adds structured YAML (scribe skill) or Mem0.
 
 ## Facts

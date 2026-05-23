@@ -34,9 +34,10 @@ No run kicks off until all G'-gates are ✅.
 | 2' — 4-agent main | SC#5 artifact run; produces the brief that goes to the AI panel | EM + Senior A + Senior B + Researcher | Opus 4.7 + Sonnet 4.6 × 3 | 2h | ⏳ |
 
 Re-run policy: if Run 2' halts on a *fixable* runtime/infra bug (per the
-[run failure recovery policy](file:///home/pedro/.claude/projects/-home-pedro-src-roster/memory/run_failure_recovery_policy.md)
-in memory), autonomously fix + restart. If it halts on an upstream OpenClaw bug,
-file a finding row in this ledger, halt, and surface.
+run-failure recovery policy stored in operator memory — autonomously fix +
+restart for straightforward fixes, halt + surface for upstream/non-trivial
+ones), apply that policy. If it halts on an upstream OpenClaw bug, file a
+finding row in this ledger, halt, and surface.
 
 ## Row template (filled in post-run)
 
