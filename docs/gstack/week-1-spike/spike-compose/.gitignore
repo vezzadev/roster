@@ -16,3 +16,6 @@ run1-followup-response.local
 # Timestamped backups of .local files (e.g. when swapping agent registries between
 # routes). *.local matches the base name at the repo root, but not these suffixes.
 *.local.*
+# Exception: committed schema documentation for *.local config files (rooms.local
+# is gitignored, rooms.local.example is checked in for operators to copy).
+!*.local.example

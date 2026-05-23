@@ -35,7 +35,7 @@ import urllib.request
 
 SPIKE = pathlib.Path(__file__).parent
 LETTA_TOKEN = (SPIKE / "letta.local").read_text().strip()
-AGENTS = json.loads((SPIKE / "run1-agents.local").read_text())
+AGENTS = json.loads((SPIKE / "run-2-agents.local").read_text())
 NEXTCLOUD = "http://127.0.0.1:8080"
 # Admin pw is the Run-1 sentinel by default ("__smoke__", documented in
 # t5-env-manifest.md "Change log" under "Pre-Run 1 (post-swap)"). Override at
@@ -45,24 +45,12 @@ NEXTCLOUD = "http://127.0.0.1:8080"
 ADMIN_AUTH = ("admin", os.environ.get("NEXTCLOUD_ADMIN_PASSWORD", "__smoke__"))
 STATE_PATH = SPIKE / "driver-state.local"
 LOG_PATH = SPIKE / "driver.log"
+ROOMS_PATH = SPIKE / "rooms.local"
 
-# Rooms to relay, with the set of participant agents that should be woken.
-# Room tokens come from t5-env-manifest.md "Talk rooms" line. Founder (operator)
-# is not an agent — only the agent participants are listed below.
-# Run 2 (4-agent) DM tokens are populated by the bring-up Talk-room creation
-# script — leave the __TBD_*__ placeholders here; the driver will refuse to
-# start (OCS will 404 on the missing room) until they're filled in. The #team
-# token below is reused from Run 1-anthropic-direct; bring-up.sh decides
-# whether to reset Talk history per G-3.5 (truncate vs recreate) before kickoff.
-ROOMS = [
-    {"token": "ygeug4an",        "name": "#team",         "agent_actors": {"em", "researcher", "analyst-a", "analyst-b"}},
-    {"token": "fz99hp5a",        "name": "EM-Researcher", "agent_actors": {"em", "researcher"}},
-    {"token": "__TBD_EM_A__",    "name": "EM-A",          "agent_actors": {"em", "analyst-a"}},
-    {"token": "__TBD_EM_B__",    "name": "EM-B",          "agent_actors": {"em", "analyst-b"}},
-    {"token": "__TBD_A_B__",     "name": "A-B",           "agent_actors": {"analyst-a", "analyst-b"}},
-    {"token": "__TBD_A_R__",     "name": "A-Researcher",  "agent_actors": {"analyst-a", "researcher"}},
-    {"token": "__TBD_B_R__",     "name": "B-Researcher",  "agent_actors": {"analyst-b", "researcher"}},
-]
+# Rooms to relay are loaded from rooms.local at startup (see load_rooms below).
+# That file is gitignored; rooms.local.example in the repo documents the schema
+# and ships the two Run-1-era tokens as defaults. Talk room tokens come from
+# `occ talk:room:create` on the live spike Nextcloud — bring-up populates them.
 
 POLL_INTERVAL_S = 30
 HARD_CAP_S = int(os.environ.get("HARD_CAP_S", "3600"))  # 1h default; overridable for time-boxed re-runs
@@ -97,6 +85,34 @@ def load_state() -> dict:
     if not STATE_PATH.exists():
         return {}
     return json.loads(STATE_PATH.read_text())
+
+
+def load_rooms() -> list[dict]:
+    """Load Talk-room config from rooms.local. Fail loud on missing / unpopulated.
+
+    Why fail loud: silently skipping unconfigured rooms is the same class of
+    failure (missed wakes for some agent-pair) that the periodic-tick fallback
+    is trying to prevent. If the operator forgot to populate, say, the A-B
+    DM token, the driver should refuse to start — not run with a degraded
+    room set that causes analysts to never see each other's messages.
+    """
+    if not ROOMS_PATH.exists():
+        raise SystemExit(
+            f"{ROOMS_PATH.name} not found. Copy {ROOMS_PATH.name}.example to "
+            f"{ROOMS_PATH.name} and populate real Talk-room tokens (created "
+            f"via `occ talk:room:create` on the spike Nextcloud)."
+        )
+    rooms = json.loads(ROOMS_PATH.read_text())
+    bad = [r for r in rooms if "<<" in r.get("token", "") or not r.get("token", "").strip()]
+    if bad:
+        raise SystemExit(
+            f"{ROOMS_PATH.name} has unpopulated tokens for: "
+            f"{[r['name'] for r in bad]}. Fill them in before starting the driver."
+        )
+    # Convert agent_actors list (JSON has no sets) into a set for downstream use.
+    for r in rooms:
+        r["agent_actors"] = set(r["agent_actors"])
+    return rooms
 
 
 def save_state(state: dict) -> None:
@@ -183,16 +199,7 @@ def _sig(*_):
 def main() -> int:
     signal.signal(signal.SIGINT, _sig)
     signal.signal(signal.SIGTERM, _sig)
-    # Filter out rooms whose tokens haven't been populated yet (TBD placeholders
-    # for Run 2 DMs that bring-up creates live). Don't poll them — OCS would
-    # 404 every tick and flood driver.log. Log once at start so the operator
-    # sees what's skipped.
-    global ROOMS
-    skipped = [r["name"] for r in ROOMS if r["token"].startswith("__TBD_")]
-    ROOMS = [r for r in ROOMS if not r["token"].startswith("__TBD_")]
-    if skipped:
-        print(f"NOTE: skipping rooms with unpopulated tokens: {skipped}", flush=True)
-
+    rooms = load_rooms()
     state = load_state()
     started = time.time()
     # In-memory last-wake timestamp per agent (Talk-driven OR tick-driven).
@@ -202,7 +209,7 @@ def main() -> int:
     # which is the right behavior (agent context is fresh too).
     last_wake_at: dict[str, float] = {agent_actor: started for agent_actor in AGENTS}
     log(
-        f"driver started — watching {[r['name'] for r in ROOMS]} for {list(AGENTS)} "
+        f"driver started — watching {[r['name'] for r in rooms]} for {list(AGENTS)} "
         f"(cap {HARD_CAP_S}s, tick {TICK_PERIOD_S}s)."
     )
     tick = 0
@@ -211,7 +218,7 @@ def main() -> int:
         if time.time() - started > HARD_CAP_S:
             log("hard cap reached; stopping.")
             break
-        for room in ROOMS:
+        for room in rooms:
             token, room_name, room_agents = room["token"], room["name"], room["agent_actors"]
             for agent_actor in room_agents:
                 if agent_actor not in AGENTS:

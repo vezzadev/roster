@@ -1,8 +1,11 @@
-"""Wire Run 1 agents (EM + Researcher) into per-agent Letta containers.
+"""Wire Run 2 agents (EM + Senior Analyst A + Senior Analyst B + Researcher)
+into per-agent Letta containers.
 
-Run 1 is the 2-agent ablation. Per the swap recorded in t5-system-prompts.md
-Change log, the smoke uses EM + Researcher so the web-fetch path + contamination
-guard get live exercise before Run 2 brings in the full 4-agent team.
+Run 2 is the 4-agent gating run for SC#5. This script supersedes the earlier
+wire-run-1.py (renamed in PR #39 because the 4-agent extension obsoleted the
+Run-1-only framing). Run 1's 2-agent ablation is reproducible by commenting
+out the two analyst entries in ROLES — the agent set + role definitions are
+the same; only the count changes.
 
 Architecture: one Letta container per agent (see ../t5-run-ledger.md "Letta
 tool-namespace finding"). A singleton Letta dedupes MCP tools by name across
@@ -17,15 +20,15 @@ Pre-create gates (any failure halts before agent create):
      recorded in t5-system-prompts.md.
   2. Banned-token grep over each prompt body returns 0 hits.
 
-Then for each of EM + Researcher:
+Then for each role in ROLES:
   - Register the role's MCP sidecars with the role's Letta (idempotent —
     skips if a server with that server_name already exists).
   - Resolve the tool IDs Letta now exposes for each sidecar, filter to the
     expected subset.
   - POST /v1/agents/ with name + system + model + tool_ids on the role's Letta.
 
-Writes the resulting (agent_id, letta_url) pairs to ./run1-agents.local
-(gitignored).
+Writes the resulting (agent_id, letta_url) pairs to ./run-2-agents.local
+(gitignored). driver.py + wire-local-tools.py read that file.
 """
 
 import hashlib
@@ -331,7 +334,7 @@ def main():
         agent_ids[role["name"]] = {"agent_id": agent_id, "letta_url": letta_url}
         print(f"  agent created: {agent_id} ({len(tool_ids)} MCP tools + Letta base)")
 
-    out = pathlib.Path(__file__).parent / "run1-agents.local"
+    out = pathlib.Path(__file__).parent / "run-2-agents.local"
     out.write_text(json.dumps(agent_ids, indent=2) + "\n")
     print(f"\nagent IDs saved to {out.name}")
     print(json.dumps(agent_ids, indent=2))

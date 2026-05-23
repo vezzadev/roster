@@ -114,13 +114,13 @@ Run-1-era handles (kept for historical reference; Run 1 row below uses these): `
 #### MCP server(s)
 
 - Source: `ghcr.io/cbcoutinho/nextcloud-mcp-server:latest` (v1.27.0). One container per agent identity for hard-isolation (cannot impersonate the wrong agent).
-- Endpoints exposed: 134 tools per server; the spike attaches only 15 (Talk send/list/get-messages/get-conv/list-participants/mark-as-read + WebDAV read/write/list/find/search/create/delete/copy/move) — see `spike-compose/wire-run-1.py` `NEXTCLOUD_SPIKE_TOOLS` for the canonical set.
+- Endpoints exposed: 134 tools per server; the spike attaches only 15 (Talk send/list/get-messages/get-conv/list-participants/mark-as-read + WebDAV read/write/list/find/search/create/delete/copy/move) — see `spike-compose/wire-run-2.py` `NEXTCLOUD_SPIKE_TOOLS` for the canonical set.
 - Researcher additionally attaches 2 tools from the `researcher-web` wrapper (`web_search`, `web_scrape`).
 - Letta MCP server registrations (post per-agent cutover; each ID is scoped to its own Letta DB):
   - on `letta-em` (8283): `nextcloud-em`
   - on `letta-researcher` (8284): `nextcloud-researcher`, `researcher-web`
   - (`nextcloud-analyst-a` from the singleton run was discarded with the singleton Letta volume; Run 2 will register it on `letta-analyst-a`.)
-- `wire-run-1.py` and `probe-tools.py` resolve these by `server_name` at runtime so the IDs are not hard-coded. Both scripts also carry a per-role `letta_url` so each role's MCP registration + agent creation lands on the role's own Letta.
+- `wire-run-2.py` and `probe-tools.py` resolve these by `server_name` at runtime so the IDs are not hard-coded. Both scripts also carry a per-role `letta_url` so each role's MCP registration + agent creation lands on the role's own Letta.
 
 ## Change log
 

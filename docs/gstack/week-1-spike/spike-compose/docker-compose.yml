@@ -27,7 +27,7 @@
 #   7. docker compose up -d letta nextcloud-mcp-em \
 #                            nextcloud-mcp-researcher researcher-web-mcp
 #   8. Wire each Letta agent to its frozen prompt from
-#      ../t5-system-prompts.md via spike-compose/wire-run-1.py. The script's
+#      ../t5-system-prompts.md via spike-compose/wire-run-2.py. The script's
 #      pre-create gates re-verify SHA-256 hashes against the Hash protocol
 #      in that file and re-run the banned-token grep (0 hits). Both gates →
 #      record in ../t5-run-ledger.md "Prompts frozen at hash".
@@ -118,7 +118,7 @@ services:
       - "127.0.0.1:8283:8283"
     environment:
       # Either OPENROUTER_API_KEY or ANTHROPIC_API_KEY must be set in practice —
-      # whichever matches the model handle wire-run-1.py uses for this role
+      # whichever matches the model handle wire-run-2.py uses for this role
       # (`openrouter/anthropic/...` vs native `anthropic/...`). Per C-6 in
       # ../t5-run-1-conclusions.md the recommended Run 2 path is native
       # Anthropic. Both vars are passed through tolerantly; Letta will error
@@ -152,7 +152,7 @@ services:
       - "127.0.0.1:8284:8283"
     environment:
       # Either OPENROUTER_API_KEY or ANTHROPIC_API_KEY must be set in practice —
-      # whichever matches the model handle wire-run-1.py uses for this role
+      # whichever matches the model handle wire-run-2.py uses for this role
       # (`openrouter/anthropic/...` vs native `anthropic/...`). Per C-6 in
       # ../t5-run-1-conclusions.md the recommended Run 2 path is native
       # Anthropic. Both vars are passed through tolerantly; Letta will error

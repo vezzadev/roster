@@ -1,0 +1,37 @@
+[
+  {
+    "name": "#team",
+    "token": "ygeug4an",
+    "agent_actors": ["em", "researcher", "analyst-a", "analyst-b"]
+  },
+  {
+    "name": "EM-Researcher",
+    "token": "fz99hp5a",
+    "agent_actors": ["em", "researcher"]
+  },
+  {
+    "name": "EM-A",
+    "token": "<<FILL_IN>>",
+    "agent_actors": ["em", "analyst-a"]
+  },
+  {
+    "name": "EM-B",
+    "token": "<<FILL_IN>>",
+    "agent_actors": ["em", "analyst-b"]
+  },
+  {
+    "name": "A-B",
+    "token": "<<FILL_IN>>",
+    "agent_actors": ["analyst-a", "analyst-b"]
+  },
+  {
+    "name": "A-Researcher",
+    "token": "<<FILL_IN>>",
+    "agent_actors": ["analyst-a", "researcher"]
+  },
+  {
+    "name": "B-Researcher",
+    "token": "<<FILL_IN>>",
+    "agent_actors": ["analyst-b", "researcher"]
+  }
+]
