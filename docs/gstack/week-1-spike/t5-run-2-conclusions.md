@@ -14,6 +14,8 @@ The engagement itself deadlocked at 14 minutes into a 60-minute cap. EM and Rese
 
 **Bottom line: the infrastructure path forward is clear (LOCAL sandbox replaces Modal for v1). The 2-agent collaboration loop has a coordination gap that 4-agent Run 2 plans should address before the gating SC#5 artifact.**
 
+> **Follow-up (2026-05-23): F-1 / F-2 superseded by structural driver fix.** PR #39 added a periodic-tick wake fallback to `driver.py` (`TICK_PERIOD_S=600`) so the EM and any other agent get woken every 10 min of idle even when no Talk activity arrives — backstop for the silent-write deadlock without relying on producer-side prompt rules. Two 2-agent re-runs (rows `2-2agent-tickfix-1` and `2-2agent-tickfix-2` in [t5-run-ledger.md](t5-run-ledger.md)) loaded the fix cleanly and ran for 15 + 35 min respectively with no deadlock; the second produced ~123 KB of consultancy content (5 research items + EM-absorbed analyst doc) for $19.66 at 87% cache hit. The tick path itself was *not* exercised in either run — agents stayed within 10 min of their last Talk activity the whole time. Full analysis: [t5-run-2-rerun-conclusions.md](t5-run-2-rerun-conclusions.md).
+
 ## What this run validated
 
 ### V-1. LOCAL sandbox is the v1 Python-tools path. Modal is dropped.

@@ -268,9 +268,14 @@ services:
       NEXTCLOUD_PASSWORD: ${RESEARCHER_APP_TOKEN:?run ./bring-up.sh — sources ./researcher-token.local}
     networks: [spike]
 
-  # Requires ./analyst-b-token.local (provision analyst-b in Nextcloud + stash
-  # the app token before `docker compose up`; otherwise this service fails fast
-  # on the unbound ANALYST_B_APP_TOKEN env var, which is the intended behavior).
+  # Token is filled in by ./provision-analyst-b.sh before the 4-agent Run 2.
+  # Compose ref intentionally uses `:-` (not `:?`) so the 2-agent ablation
+  # subset can parse this file without analyst-b-token.local existing yet —
+  # otherwise compose v2 errors at parse-time on every up command, regardless
+  # of which services are listed. Fail-loud for the analyst-b path moves into
+  # the MCP container itself: with NEXTCLOUD_PASSWORD empty it will 401 on the
+  # first Nextcloud API call and log + restart, which surfaces in `docker
+  # compose ps` for anyone actually trying to use the analyst-b sidecar.
   nextcloud-mcp-analyst-b:
     image: ghcr.io/cbcoutinho/nextcloud-mcp-server:latest
     restart: unless-stopped
@@ -278,7 +283,7 @@ services:
     environment:
       NEXTCLOUD_HOST: http://nextcloud
       NEXTCLOUD_USERNAME: analyst-b
-      NEXTCLOUD_PASSWORD: ${ANALYST_B_APP_TOKEN:?run ./bring-up.sh — sources ./analyst-b-token.local}
+      NEXTCLOUD_PASSWORD: ${ANALYST_B_APP_TOKEN:-}
     networks: [spike]
 
   # ─── Run 2 only — uncomment + verify before booting Run 2 ────────────────

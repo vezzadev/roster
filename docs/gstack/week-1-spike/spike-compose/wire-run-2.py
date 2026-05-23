@@ -76,8 +76,11 @@ NEXTCLOUD_SPIKE_TOOLS = {
     "nc_webdav_copy_resource", "nc_webdav_move_resource",
 }
 
-# researcher-web wrapper tools (Firecrawl-backed, blocklist-enforced).
-RESEARCHER_WEB_TOOLS = {"web_search", "web_scrape"}
+# Web tools are no longer wired here. PR #36 (commit 27373ba) retired the
+# researcher-web-mcp sidecar and moved web_scrape / firecrawl_search to Letta's
+# LOCAL sandbox; wire-local-tools.py is what attaches them to the Researcher
+# after this script creates the bare agent. The previously-attached MCP block
+# (("researcher-web", ...)) was kept in this file in error and is removed here.
 
 # Seed memory blocks per role. Letta 0.16.8 no longer ships default `human` /
 # `persona` blocks; without these, `memory_insert(label="human", …)` errors
@@ -211,7 +214,6 @@ ROLES = [
         "letta_url": "http://127.0.0.1:8284",
         "mcps": [
             ("nextcloud-researcher", "http://nextcloud-mcp-researcher:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
-            ("researcher-web", "http://researcher-web-mcp:8000/mcp", RESEARCHER_WEB_TOOLS),
         ],
     },
     # Senior Analysts: per design, only the Researcher has web access. Analysts
