@@ -45,8 +45,8 @@ LOG_PATH = SPIKE / "driver.log"
 # Room tokens come from t5-env-manifest.md "Talk rooms" line. Founder (operator)
 # is not an agent — only the agent participants are listed below.
 ROOMS = [
-    {"token": "vzyiva4u", "name": "#team",         "agent_actors": {"em", "researcher"}},
-    {"token": "z4n3425w", "name": "EM-Researcher", "agent_actors": {"em", "researcher"}},
+    {"token": "ygeug4an", "name": "#team",         "agent_actors": {"em", "researcher"}},
+    {"token": "fz99hp5a", "name": "EM-Researcher", "agent_actors": {"em", "researcher"}},
 ]
 
 POLL_INTERVAL_S = 30

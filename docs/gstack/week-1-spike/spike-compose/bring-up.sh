@@ -38,4 +38,16 @@ RESEARCHER_APP_TOKEN="$([ -r researcher-token.local ] && tr -d '\n' < researcher
 export FIRECRAWL_API_KEY
 FIRECRAWL_API_KEY="$([ -r firecrawl.local ] && tr -d '\n' < firecrawl.local || true)"
 
+# Application Insights connection string for the optional OTel overlay. One
+# line: "InstrumentationKey=...;IngestionEndpoint=...;LiveEndpoint=...".
+# Tolerant: only required when docker-compose.otel.yml is in the -f chain.
+export AZURE_MONITOR_CONNECTION_STRING
+AZURE_MONITOR_CONNECTION_STRING="$([ -r azure-appinsights.local ] && tr -d '\n' < azure-appinsights.local || true)"
+
+# Anthropic API key for the native-Anthropic-client unblock path (C-6 option b
+# in ../t5-run-1-conclusions.md). Tolerant: only required when wire-run-1.py
+# uses anthropic/claude-* handles instead of openrouter/anthropic/claude-*.
+export ANTHROPIC_API_KEY
+ANTHROPIC_API_KEY="$([ -r anthropic.local ] && tr -d '\n' < anthropic.local || true)"
+
 exec docker compose "$@"

@@ -1,0 +1,63 @@
+# OTel Collector config — receives OTLP from the Letta containers, ships to
+# Application Insights, mirrors to stdout for local debugging.
+#
+# Pipelines: traces (the per-request LLM call spans + downstream HTTP +
+# Letta FastAPI requests) and metrics (counts/duration histograms emitted by
+# the OTel SDK). Logs are off — Letta's own logs already flow via
+# `docker compose logs`.
+#
+# The azuremonitor exporter only exists in opentelemetry-collector-contrib —
+# the overlay pins the contrib image accordingly.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Strip prompt/completion bodies before they ever leave the network — these
+  # are large and they're customer + PII surface. The OTel Anthropic
+  # instrumentation can be configured to omit them at the source via
+  # OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT=false; this processor
+  # is belt-and-suspenders for the case where that env got dropped.
+  attributes/strip-content:
+    actions:
+      - key: gen_ai.prompt
+        action: delete
+      - key: gen_ai.completion
+        action: delete
+      - key: gen_ai.completion.0.content
+        action: delete
+      - key: gen_ai.prompt.0.content
+        action: delete
+
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+
+exporters:
+  azuremonitor:
+    connection_string: ${env:AZURE_MONITOR_CONNECTION_STRING}
+    # Default mapping: traces → dependencies + requests tables, metrics →
+    # customMetrics. OTel resource attributes land in customDimensions.
+  debug:
+    verbosity: basic
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [attributes/strip-content, batch]
+      exporters: [azuremonitor, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [azuremonitor]
+  telemetry:
+    logs:
+      level: info

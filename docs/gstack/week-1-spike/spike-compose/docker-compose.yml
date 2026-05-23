@@ -117,7 +117,14 @@ services:
     ports:
       - "127.0.0.1:8283:8283"
     environment:
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?run ./bring-up.sh — sources ./openrouter.local}
+      # Either OPENROUTER_API_KEY or ANTHROPIC_API_KEY must be set in practice —
+      # whichever matches the model handle wire-run-1.py uses for this role
+      # (`openrouter/anthropic/...` vs native `anthropic/...`). Per C-6 in
+      # ../t5-run-1-conclusions.md the recommended Run 2 path is native
+      # Anthropic. Both vars are passed through tolerantly; Letta will error
+      # only if the key for the chosen handle is missing.
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       SECURE: "true"
       LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
     volumes:
@@ -137,7 +144,14 @@ services:
     ports:
       - "127.0.0.1:8284:8283"
     environment:
-      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?run ./bring-up.sh — sources ./openrouter.local}
+      # Either OPENROUTER_API_KEY or ANTHROPIC_API_KEY must be set in practice —
+      # whichever matches the model handle wire-run-1.py uses for this role
+      # (`openrouter/anthropic/...` vs native `anthropic/...`). Per C-6 in
+      # ../t5-run-1-conclusions.md the recommended Run 2 path is native
+      # Anthropic. Both vars are passed through tolerantly; Letta will error
+      # only if the key for the chosen handle is missing.
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       SECURE: "true"
       LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
     volumes:
@@ -154,7 +168,8 @@ services:
   #   ports:
   #     - "127.0.0.1:8285:8283"
   #   environment:
-  #     OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?run ./bring-up.sh — sources ./openrouter.local}
+  #     OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+  #     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   #     SECURE: "true"
   #     LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
   #   volumes:
@@ -168,7 +183,8 @@ services:
   #   ports:
   #     - "127.0.0.1:8286:8283"
   #   environment:
-  #     OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:?run ./bring-up.sh — sources ./openrouter.local}
+  #     OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+  #     ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
   #     SECURE: "true"
   #     LETTA_SERVER_PASSWORD: ${LETTA_SERVER_PASSWORD:?run ./bring-up.sh — sources ./letta.local}
   #   volumes:

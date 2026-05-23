@@ -1,0 +1,76 @@
+// Per-agent (per service.name) token + cost breakdown over a single run.
+// Mirrors the t7-spike-cost.md "Per-run cost" table — re-derive the same
+// numbers from telemetry instead of OpenRouter CSV exports.
+//
+// Set the time window to the run's wall-clock from t5-run-ledger.md. Prices
+// match Anthropic posted rates for Opus 4.7 + Sonnet 4.6 as of 2026-05;
+// revise when bumping model versions.
+//
+// Two things to watch out for:
+//   1. Field names follow the LEGACY OpenLLMetry-Anthropic convention
+//      (`gen_ai.usage.prompt_tokens` / `gen_ai.usage.completion_tokens`)
+//      even with OTEL_SEMCONV_STABILITY_OPT_IN=gen_ai_latest_experimental.
+//      The newer `input_tokens` / `output_tokens` keys come back null on
+//      letta-em/letta-researcher spans (verified 2026-05-23 against the
+//      Run 1-anthropic-direct dataset).
+//   2. App Insights truncates `customDimensions` at ~64KB. Spans carrying
+//      gen_ai.prompt / gen_ai.completion payloads will lose tail-end
+//      attributes (incl. `agent_role`, `gen_ai.request.model`). Group by
+//      `cloud_RoleName` (set from `service.name` and lives outside
+//      customDimensions) instead of `agent_role` to keep all calls
+//      attributed. The otel-collector's `attributes/strip-content`
+//      processor should drop these payloads — if you're seeing truncated
+//      rows, verify that processor is wired into the pipeline.
+
+let price_input = dynamic({
+    "letta-em":         15.00 / 1000000.0,   // claude-opus-4-7
+    "letta-researcher":  3.00 / 1000000.0    // claude-sonnet-4-6
+});
+let price_output = dynamic({
+    "letta-em":         75.00 / 1000000.0,
+    "letta-researcher": 15.00 / 1000000.0
+});
+let price_cache_read = dynamic({
+    "letta-em":          1.50 / 1000000.0,
+    "letta-researcher":  0.30 / 1000000.0
+});
+let price_cache_write = dynamic({
+    "letta-em":         18.75 / 1000000.0,
+    "letta-researcher":  3.75 / 1000000.0
+});
+
+dependencies
+| where name == "anthropic.chat"
+// Edit this window to the run's actual wall-clock (UTC) from t5-run-ledger.md.
+// Default below = Run 1-anthropic-direct clean kickoff window.
+| where timestamp between (datetime(2026-05-23T01:51:00Z) .. datetime(2026-05-23T02:15:00Z))
+| extend
+    prompt_tokens     = tolong(customDimensions["gen_ai.usage.prompt_tokens"]),
+    completion_tokens = tolong(customDimensions["gen_ai.usage.completion_tokens"]),
+    cache_read        = tolong(customDimensions["gen_ai.usage.cache_read_input_tokens"]),
+    cache_write       = tolong(customDimensions["gen_ai.usage.cache_creation_input_tokens"])
+| extend
+    cache_read   = coalesce(cache_read, 0),
+    cache_write  = coalesce(cache_write, 0),
+    billable_input = prompt_tokens - coalesce(cache_read, 0) - coalesce(cache_write, 0)
+| extend
+    cost = billable_input    * toreal(price_input[cloud_RoleName])
+         + completion_tokens * toreal(price_output[cloud_RoleName])
+         + cache_read        * toreal(price_cache_read[cloud_RoleName])
+         + cache_write       * toreal(price_cache_write[cloud_RoleName])
+| summarize
+    reqs              = count(),
+    total_prompt      = sum(prompt_tokens),
+    total_billable    = sum(billable_input),
+    total_cache_read  = sum(cache_read),
+    total_cache_write = sum(cache_write),
+    total_output      = sum(completion_tokens),
+    cost_usd          = round(sum(cost), 4)
+    by cloud_RoleName
+| extend cache_hit_pct = iff(total_prompt > 0,
+                             round(100.0 * total_cache_read / total_prompt, 1),
+                             0.0)
+| project cloud_RoleName, reqs,
+          total_prompt, total_billable, total_cache_read, total_cache_write, total_output,
+          cache_hit_pct, cost_usd
+| order by cost_usd desc
