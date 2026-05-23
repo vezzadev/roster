@@ -1,0 +1,55 @@
+// Single-agent boot smoke. No MCP servers, no channels — just a Gateway that
+// can answer a chat prompt via Anthropic so we can verify OTel cache spans.
+{
+  agents: {
+    defaults: {
+      workspace: "/workspace/smoke",
+      model: {
+        primary: "anthropic/claude-haiku-4-5",
+      },
+      models: {
+        "anthropic/claude-haiku-4-5": { params: { cacheRetention: "short" } },
+      },
+      heartbeat: { every: "0m" },  // disable — smoke is single-shot
+      skills: [],
+    },
+    list: [
+      { id: "smoke", default: true, workspace: "/workspace/smoke" },
+    ],
+  },
+  env: {
+    ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}",
+  },
+  mcp: { servers: {} },
+  channels: {},
+  bindings: [],
+  gateway: {
+    mode: "local",
+    port: 18789,
+    reload: { mode: "off" },
+  },
+  plugins: {
+    allow: ["diagnostics-otel", "anthropic"],
+    entries: {
+      "diagnostics-otel": { enabled: true },
+      // anthropic provider stays in stock node_modules but defaults to disabled —
+      // turning it on is what makes the provider report token usage to the
+      // diagnostic event bus that diagnostics-otel reads.
+      "anthropic": { enabled: true },
+    },
+  },
+  diagnostics: {
+    enabled: true,
+    otel: {
+      enabled: true,
+      endpoint: "http://otel-collector:4318",
+      protocol: "http/protobuf",
+      serviceName: "openclaw-gateway",
+      traces: true,
+      metrics: true,
+      logs: false,
+      sampleRate: 1.0,            // smoke run — capture everything
+      flushIntervalMs: 5000,      // fast flush so the smoke turn lands quickly
+    },
+  },
+}

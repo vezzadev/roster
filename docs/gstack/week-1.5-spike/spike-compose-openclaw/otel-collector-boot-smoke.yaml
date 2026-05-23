@@ -1,0 +1,51 @@
+# Boot-smoke OTel collector config.
+#
+# Same structure as week-1-spike/spike-compose/otel-collector/config.yaml
+# but with detailed debug verbosity so we can read raw span attributes
+# (the T9' gate check) without round-tripping through App Insights.
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  attributes/strip-content:
+    actions:
+      - key: gen_ai.prompt
+        action: delete
+      - key: gen_ai.completion
+        action: delete
+      - key: gen_ai.completion.0.content
+        action: delete
+      - key: gen_ai.prompt.0.content
+        action: delete
+
+  batch:
+    timeout: 5s
+    send_batch_size: 100
+
+exporters:
+  azuremonitor:
+    connection_string: ${env:AZURE_MONITOR_CONNECTION_STRING}
+  debug:
+    verbosity: detailed
+    sampling_initial: 50
+    sampling_thereafter: 1
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [attributes/strip-content, batch]
+      exporters: [azuremonitor, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [azuremonitor, debug]
+  telemetry:
+    logs:
+      level: info
