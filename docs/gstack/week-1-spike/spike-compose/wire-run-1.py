@@ -1,13 +1,16 @@
-"""Wire Run 2 agents (EM + Senior Analyst A + Senior Analyst B + Researcher)
-into per-agent Letta containers.
+"""Wire Run 1 agents (EM + Researcher) into per-agent Letta containers.
 
-Run 2 is the 4-agent gating run for SC#5. This script is the active wiring
-path going forward. wire-run-1.py is preserved alongside as a frozen
-reference for the 2-agent Run 1 / Run 1-anthropic-direct / Run 2-local-sandbox
-wirings — it points at retired services so it is no longer expected to run
-cleanly. The 2-agent ablation, if needed, is reproducible from this file by
-commenting out the two analyst entries in ROLES; the agent set + role
-definitions are identical, only the count changes.
+Kept as a historical reference for the 2-agent Run 1 / Run 1-anthropic-direct /
+Run 2-local-sandbox wiring. The active 4-agent script is wire-run-2.py — use
+that for Run 2 + any future runs. This file is preserved so the exact wiring
+state of completed runs is traceable; it references retired services like
+researcher-web-mcp and writes to run1-agents.local (consumers now read
+run-2-agents.local), so it is no longer expected to run cleanly against the
+current compose without manual fixups.
+
+Run 1 is the 2-agent ablation. Per the swap recorded in t5-system-prompts.md
+Change log, the smoke uses EM + Researcher so the web-fetch path + contamination
+guard get live exercise before Run 2 brings in the full 4-agent team.
 
 Architecture: one Letta container per agent (see ../t5-run-ledger.md "Letta
 tool-namespace finding"). A singleton Letta dedupes MCP tools by name across
@@ -22,15 +25,15 @@ Pre-create gates (any failure halts before agent create):
      recorded in t5-system-prompts.md.
   2. Banned-token grep over each prompt body returns 0 hits.
 
-Then for each role in ROLES:
+Then for each of EM + Researcher:
   - Register the role's MCP sidecars with the role's Letta (idempotent —
     skips if a server with that server_name already exists).
   - Resolve the tool IDs Letta now exposes for each sidecar, filter to the
     expected subset.
   - POST /v1/agents/ with name + system + model + tool_ids on the role's Letta.
 
-Writes the resulting (agent_id, letta_url) pairs to ./run-2-agents.local
-(gitignored). driver.py + wire-local-tools.py read that file.
+Writes the resulting (agent_id, letta_url) pairs to ./run1-agents.local
+(gitignored).
 """
 
 import hashlib
@@ -44,8 +47,6 @@ LETTA_TOKEN = pathlib.Path(__file__).parent.joinpath("letta.local").read_text().
 
 EXPECTED_HASHES = {
     "Engagement Manager (EM)": "e966a65548025d0dfe65ac52a24e4a855ec103de3a2223a966757f304f0ad40f",
-    "Senior Analyst A": "4f715306639f519af745e1df97455a5b99c9e99266069b60c5b01fdf8b01f447",
-    "Senior Analyst B": "318161ba9304020282608c4507760803dac43c4072421875f025498948710611",
     "Researcher": "2fff77b9103e233e7a7eea4728e90d668a42fd3e9e3d402c6ac7a86d29435d24",
 }
 
@@ -123,54 +124,6 @@ MEMORY_BLOCKS = {
             "description": "Who I am working for and how they communicate with me.",
         },
     ],
-    "analyst-a": [
-        {
-            "label": "persona",
-            "value": (
-                "I am Senior Analyst A. I do deep analytical work on threads "
-                "the EM assigns. I draft section files under /agents/ (named "
-                "for the thread I own), coordinate with Senior Analyst B in "
-                "the A-B DM when threads overlap, and request sources from "
-                "the Researcher when I need them. I do not fetch web "
-                "material myself."
-            ),
-            "description": "My own role, responsibilities, and how I operate.",
-        },
-        {
-            "label": "human",
-            "value": (
-                "I work under the Engagement Manager (EM). The EM assigns my "
-                "threads and integrates my output into /agents/brief.md. The "
-                "founder is upstream of the EM; I do not interact with the "
-                "founder directly."
-            ),
-            "description": "Who I am working for and how they communicate with me.",
-        },
-    ],
-    "analyst-b": [
-        {
-            "label": "persona",
-            "value": (
-                "I am Senior Analyst B. I do deep analytical work on threads "
-                "the EM assigns. I draft section files under /agents/ (named "
-                "for the thread I own), coordinate with Senior Analyst A in "
-                "the A-B DM when threads overlap, and request sources from "
-                "the Researcher when I need them. I do not fetch web "
-                "material myself."
-            ),
-            "description": "My own role, responsibilities, and how I operate.",
-        },
-        {
-            "label": "human",
-            "value": (
-                "I work under the Engagement Manager (EM). The EM assigns my "
-                "threads and integrates my output into /agents/brief.md. The "
-                "founder is upstream of the EM; I do not interact with the "
-                "founder directly."
-            ),
-            "description": "Who I am working for and how they communicate with me.",
-        },
-    ],
 }
 
 # Each role has its own Letta server URL + MCP sidecars. Each MCP is
@@ -204,27 +157,6 @@ ROLES = [
         "mcps": [
             ("nextcloud-researcher", "http://nextcloud-mcp-researcher:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
             ("researcher-web", "http://researcher-web-mcp:8000/mcp", RESEARCHER_WEB_TOOLS),
-        ],
-    },
-    # Senior Analysts: per design, only the Researcher has web access. Analysts
-    # synthesize from Researcher bundles + the EM's framing. They get only the
-    # Nextcloud MCP (Talk + WebDAV) on their own Letta.
-    {
-        "title": "Senior Analyst A",
-        "name": "analyst-a",
-        "model": "anthropic/claude-sonnet-4-6",
-        "letta_url": "http://127.0.0.1:8285",
-        "mcps": [
-            ("nextcloud-analyst-a", "http://nextcloud-mcp-analyst-a:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
-        ],
-    },
-    {
-        "title": "Senior Analyst B",
-        "name": "analyst-b",
-        "model": "anthropic/claude-sonnet-4-6",
-        "letta_url": "http://127.0.0.1:8286",
-        "mcps": [
-            ("nextcloud-analyst-b", "http://nextcloud-mcp-analyst-b:8000/mcp", NEXTCLOUD_SPIKE_TOOLS),
         ],
     },
 ]
@@ -336,7 +268,7 @@ def main():
         agent_ids[role["name"]] = {"agent_id": agent_id, "letta_url": letta_url}
         print(f"  agent created: {agent_id} ({len(tool_ids)} MCP tools + Letta base)")
 
-    out = pathlib.Path(__file__).parent / "run-2-agents.local"
+    out = pathlib.Path(__file__).parent / "run1-agents.local"
     out.write_text(json.dumps(agent_ids, indent=2) + "\n")
     print(f"\nagent IDs saved to {out.name}")
     print(json.dumps(agent_ids, indent=2))
