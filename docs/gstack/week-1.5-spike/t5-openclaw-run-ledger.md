@@ -30,7 +30,7 @@ Run 1' kicks off with G'-2/3 deferred; Run 2' requires G'-2 fully closed.
 |---|---|---|---|---|---|
 | 1' — 2-agent smoke (single process) | Validate end-to-end happy path under OpenClaw before scaling up | EM + Researcher | Opus 4.7 + Sonnet 4.6 | **15 min** | ⚠️ partial — brief produced ($19.54), coordination loop NOT validated (F-O-1 Talk→OpenClaw delivery gap). See [conclusions](t5-run-1prime-conclusions.md). |
 | 1'-mg — 2-agent re-run, N-gateway architecture | Validate the bridge-based fix for F-O-1 before scaling to 4 agents | EM + Researcher | Opus 4.7 + Sonnet 4.6 | **15 min** | ✅ success — 163-line brief with 20 cited sources at **$16.37** (17 % cheaper than Run 1'); F-O-1 verified fixed; F-O-7 + F-O-8 opened. See [conclusions](t5-run-1prime-mg-conclusions.md). |
-| 2' — 4-agent main | SC#5 artifact run; produces the brief that goes to the AI panel | EM + Senior A + Senior B + Researcher | Opus 4.7 + Sonnet 4.6 × 3 | 2h | 🚧 unblocked once F-O-8 + F-O-2 fixes land; compose grows from 2 to 4 gateways |
+| 2' — 4-agent main | SC#5 artifact run; produces the brief that goes to the AI panel | EM + Senior A + Senior B + Researcher | Opus 4.7 + Sonnet 4.6 × 3 | 2h | **deferred** (see [spike-conclusions.md](spike-conclusions.md)) — cost-prohibitive on current per-agent-hour rate (~$240 projected); runtime verdict already settled by Run 1 + Run 1'-mg. Re-runs after Week 2 cost optimization + F-O-8 fix. |
 
 Run 1' kickoff command: `./spike-compose-openclaw/run-1prime-kickoff.sh`. Hard-cap enforced via `HARD_CAP_SECONDS=900` then graceful `compose down`. Snapshot lands under `spike-compose-openclaw/run-1prime-snapshot/<ISO-timestamp>/`.
 

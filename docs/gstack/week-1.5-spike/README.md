@@ -4,8 +4,10 @@ Parent: [../week-1-spike/README.md](../week-1-spike/README.md) · Origin: Run-2-
 at T+67 (F-7 share gap + F-8 OTel anthropic-wrap summarizer crash) +
 Run-1-anthropic-direct halt on MCP streamable-http SSE-parse bug.
 
-**Status:** draft, not yet kicked off. Authored 2026-05-23 after Week 1's
-fourth halt on a Letta-side bug.
+**Status:** **closed 2026-05-23**, see [spike-conclusions.md](spike-conclusions.md).
+Verdict — Nextcloud Talk viable for agent comms; OpenClaw is the runtime
+(Letta retired); cost optimization is the gating Week 2 prerequisite.
+Run 2' (4-agent SC#5 artifact) deferred until cost-opt lands.
 
 ## Why a 1.5 (not pivot, not Week 2)
 
@@ -126,6 +128,12 @@ No change. Same rubric, same panel, same blind protocol. If the 1.5 brief
 beats Run 1's `run1-artifacts/brief.md` on the same dimensions, the swap is
 justified. If it doesn't, runtime was not the bottleneck.
 
+End-to-end check execution (self-grade + URL audit + AI panel + 7-gram):
+[t1-checks-report.md](t1-checks-report.md). Headline so far — Letta Run 1
+clears the strong-positive gate; OpenClaw Run 1'-mg fails on D6 (risks
+without paired mitigations). Run 2' must re-run all four checks before any
+architecture verdict.
+
 ### T2' — Fallback bullets (OpenClaw-specific)
 
 30-min pre-spike exercise mirroring Week 1's T2. Anticipated OpenClaw failure
@@ -199,10 +207,11 @@ disentangle "work" vs "polling" cost.
 
 ### T8' — Gate decision
 
-Same protocol as Week 1's T8: founder self-grade against
-`../week-1-spike/t1-grading-rubric.md`, multi-AI opinion panel review, paid
-analyst recruitment only if panel signal is positive. The 1.5 brief lands
-in `t8-openclaw-brief.md`.
+**Closed**, see [spike-conclusions.md](spike-conclusions.md). Verdict: Nextcloud
+viable; OpenClaw is the runtime; cost optimization is the gating Week 2
+prerequisite. Run 2' deferred until cost optimization lands —
+running it on current per-agent-hour rate would burn ~$240 producing an
+artifact whose runtime verdict is already settled.
 
 ### T9' — Observability parity (new, spike-blocker)
 

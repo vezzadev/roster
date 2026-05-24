@@ -138,19 +138,11 @@ Layer 3 is real and unfixable from inside the spike. A motivated brief that reor
 
 ## Self-grade
 
-Per Honesty guard #2: every score ≥ 3 must name a specific quote from [t8-sample-brief.md](t8-sample-brief.md). No score without evidence.
+Per Honesty guard #2: every score ≥ 3 must name a specific quote. No score without evidence.
 
-| # | Dimension | Score | Evidence quote (required for score ≥ 3) |
-|---|-----------|-------|------------------------------------------|
-| 1 | Exec summary + recommendation | _–_ | |
-| 2 | Country snapshot + macro context | _–_ | |
-| 3 | Business environment | _–_ | |
-| 4 | Target market sizing + sub-segmentation | _–_ | |
-| 5 | Competitive landscape | _–_ | |
-| 6 | Risks + mitigations | _–_ | |
-| 7 | Entry mode evaluation | _–_ | |
-| 8 | Citation discipline | _–_ | |
-| | **Average / verdict** | _–_ | |
+**Filled in** for both spike briefs (Letta Run 1 + OpenClaw Run 1'-mg) in [../week-1.5-spike/t1-checks-report.md §1](../week-1.5-spike/t1-checks-report.md#1-self-grade). That report also covers the three contamination/quality checks this rubric mandates (URL audit, AI panel, 7-gram).
+
+Headline: Letta Run 1 = 4.06 avg, no sub-3, strong-positive. OpenClaw Run 1'-mg = 3.25 avg, sub-3 on D2 + D6, negative.
 
 ## Gate decision
 
