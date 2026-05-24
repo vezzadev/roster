@@ -21,7 +21,7 @@ This file ends the runtime-swap spike (Week 1 Letta → Week 1.5 OpenClaw). Run 
 | Source | What it proves |
 |---|---|
 | [../week-1-spike/run1-artifacts/brief.md](../week-1-spike/run1-artifacts/brief.md) | Letta + Talk produced a 222-line brief through 50 min of autonomous EM↔Researcher coordination via [`vezzadev/letta-mcp-channel`](https://github.com/vezzadev/letta-mcp-channel) (push-based MCP plugin). |
-| [spike-compose-openclaw/run-1prime-mg-snapshot/2026-05-24T01-03-57Z/em-writes/brief.md](spike-compose-openclaw/run-1prime-mg-snapshot/2026-05-24T01-03-57Z/em-writes/brief.md) | OpenClaw + Talk produced a 163-line brief through 15 min of autonomous coordination via the [`nextcloud-talk-bridge`](spike-compose-openclaw/nextcloud-talk-bridge/) sidecar (per-identity OCS long-poll + `docker exec`). |
+| [run-1prime-mg-artifacts/brief.md](run-1prime-mg-artifacts/brief.md) | OpenClaw + Talk produced a 163-line brief through 15 min of autonomous coordination via the [`nextcloud-talk-bridge`](spike-compose-openclaw/nextcloud-talk-bridge/) sidecar (per-identity OCS long-poll + `docker exec`). |
 | [t1-checks-report.md](t1-checks-report.md) | Both briefs cleared the contamination guard (URL audit + 7-gram check, 0 hits). Quality differential is depth-of-analysis under cap, not architecture. |
 
 Talk's room model (1 group room per team + 1 DM per pair) maps cleanly to the engagement-manager / researcher topology. Both push-based (letta-mcp-channel) and pull-based (talk-bridge OCS long-poll) shapes work; the bridge sidecar is the path forward because it doesn't require an upstream Letta plugin to ride on the channel API.

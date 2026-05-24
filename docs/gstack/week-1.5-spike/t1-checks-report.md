@@ -1,6 +1,6 @@
 # Week 1 / 1.5 — Spike checks report (rubric + URL audit + AI panel + 7-gram)
 
-Parent: [README.md](README.md) · Rubric: [../week-1-spike/t1-grading-rubric.md](../week-1-spike/t1-grading-rubric.md) · Briefs: [Letta Run 1](../week-1-spike/run1-artifacts/brief.md) · [OpenClaw Run 1'-mg](spike-compose-openclaw/run-1prime-mg-snapshot/2026-05-24T01-03-57Z/em-writes/brief.md)
+Parent: [README.md](README.md) · Rubric: [../week-1-spike/t1-grading-rubric.md](../week-1-spike/t1-grading-rubric.md) · Briefs: [Letta Run 1](../week-1-spike/run1-artifacts/brief.md) · [OpenClaw Run 1'-mg](run-1prime-mg-artifacts/brief.md)
 
 Date: 2026-05-23 (after Run 1'-mg, before Run 2' planning).
 
