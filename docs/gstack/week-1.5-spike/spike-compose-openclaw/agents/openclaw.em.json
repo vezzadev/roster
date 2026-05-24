@@ -1,0 +1,86 @@
+// EM single-agent config — N-gateway architecture, Run 1' rerun.
+//
+// Why split: each agent runs in its own OpenClaw gateway process. Single bot
+// identity per gateway is OpenClaw's actual constraint at the Nextcloud-Talk
+// channel layer; we satisfy it at the deployment layer instead of at the
+// channel-plugin layer. Each agent is a regular Nextcloud user (created by
+// nextcloud-init via OCS user-create, not via talk:bot:install) — so a human
+// can take over by logging in as the agent's user directly.
+//
+// MCP scoping: this gateway loads only nextcloud-em. researcher-web is
+// excluded because EM is the synthesis role; it does no web fetching.
+//
+// Delivery: inbound Talk events arrive via the nextcloud-talk-bridge sidecar
+// which polls OCS per-user and invokes `openclaw agent` on this gateway.
+{
+  agents: {
+    defaults: {
+      heartbeat: { every: "5m" },
+    },
+    list: [
+      {
+        id: "em",
+        default: true,
+        workspace: "/workspace/em",
+        model: {
+          primary: "anthropic/claude-opus-4-7",
+        },
+        models: {
+          "anthropic/claude-opus-4-7": { params: { cacheRetention: "long" } },
+        },
+        tools: {
+          byProvider: {
+            "nextcloud-em": { allow: ["*"] },
+          },
+        },
+      },
+    ],
+  },
+  env: {
+    vars: {
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}",
+      NEXTCLOUD_HOST: "${NEXTCLOUD_HOST}",
+      NEXTCLOUD_USERNAME_EM: "${NEXTCLOUD_USERNAME_EM}",
+      NEXTCLOUD_PASSWORD_EM: "${NEXTCLOUD_PASSWORD_EM}",
+    },
+  },
+  mcp: {
+    servers: {
+      "nextcloud-em": {
+        command: "uvx",
+        args: ["--from", "nextcloud-mcp-server@latest", "nextcloud-mcp-server", "run", "--transport", "stdio"],
+        env: {
+          NEXTCLOUD_HOST:     "${NEXTCLOUD_HOST}",
+          NEXTCLOUD_USERNAME: "${NEXTCLOUD_USERNAME_EM}",
+          NEXTCLOUD_PASSWORD: "${NEXTCLOUD_PASSWORD_EM}",
+        },
+      },
+    },
+  },
+  gateway: {
+    mode: "local",
+    port: 18789,
+    reload: { mode: "off" },
+  },
+  plugins: {
+    allow: ["diagnostics-otel", "anthropic"],
+    entries: {
+      "diagnostics-otel": { enabled: true },
+      "anthropic":        { enabled: true },
+    },
+  },
+  diagnostics: {
+    enabled: true,
+    otel: {
+      enabled: true,
+      endpoint: "http://otel-collector:4318",
+      protocol: "http/protobuf",
+      serviceName: "openclaw-em",
+      traces: true,
+      metrics: true,
+      logs: false,
+      sampleRate: 1.0,
+      flushIntervalMs: 5000,
+    },
+  },
+}

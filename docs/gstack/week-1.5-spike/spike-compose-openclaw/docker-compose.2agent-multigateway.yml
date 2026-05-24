@@ -1,0 +1,237 @@
+# Run 1' rerun — N-gateway (one OpenClaw per agent) topology.
+#
+# Architecture (vs docker-compose.2agent.yml):
+#
+#   * Each agent runs in its own OpenClaw gateway process (openclaw-em,
+#     openclaw-researcher). MCP set scoped to that agent only — no
+#     tools.byProvider acrobatics, hard process-level isolation.
+#
+#   * Each agent is a regular Nextcloud user (em, researcher) created by
+#     nextcloud-init via OCS user-create. No talk:bot:install. Human can take
+#     over by logging in as the user.
+#
+#   * nextcloud-talk-bridge polls each user's Talk rooms via OCS long-poll
+#     and `docker exec`s `openclaw agent` on the correct gateway to deliver
+#     new messages. Mirrors what letta-mcp-channel did for Letta.
+#
+# This addresses F-O-1 (Talk → OpenClaw delivery gap) and F-O-4 (per-agent
+# MCP scoping) from t5-run-1prime-conclusions.md. F-O-2 (workspace sandbox)
+# and F-O-3 (compaction race) are unchanged — those need separate fixes.
+
+services:
+
+  nc-db:
+    image: postgres:16-alpine
+    container_name: nc-db-run1prime-mg
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NC_DB_PASSWORD:?set in .env.run1prime}
+    volumes:
+      - nc-db-data:/var/lib/postgresql/data
+    networks: [run1prime-mg]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  nc-redis:
+    image: redis:7-alpine
+    container_name: nc-redis-run1prime-mg
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    networks: [run1prime-mg]
+
+  nextcloud:
+    image: nextcloud:30
+    container_name: nextcloud-run1prime-mg
+    restart: unless-stopped
+    depends_on:
+      nc-db:
+        condition: service_healthy
+      nc-redis:
+        condition: service_started
+    environment:
+      POSTGRES_HOST: nc-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NC_DB_PASSWORD:?}
+      REDIS_HOST: nc-redis
+      NEXTCLOUD_ADMIN_USER: ${NC_ADMIN_USER:-admin}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NC_ADMIN_PASSWORD:?}
+      NEXTCLOUD_TRUSTED_DOMAINS: "localhost nextcloud"
+    volumes:
+      - nc-data:/var/www/html
+      - ./nextcloud-provision/install-talk.sh:/docker-entrypoint-hooks.d/post-installation/install-talk.sh:ro
+    networks: [run1prime-mg]
+
+  nextcloud-init:
+    image: alpine:3.20
+    container_name: nextcloud-init-run1prime-mg
+    restart: "no"
+    depends_on:
+      nextcloud:
+        condition: service_started
+    environment:
+      NC_ADMIN_USER: ${NC_ADMIN_USER:-admin}
+      NC_ADMIN_PASSWORD: ${NC_ADMIN_PASSWORD:?}
+      NEXTCLOUD_HOST: http://nextcloud
+      NEXTCLOUD_USERNAME_EM: ${NEXTCLOUD_USERNAME_EM:-em}
+      NEXTCLOUD_PASSWORD_EM: ${NEXTCLOUD_PASSWORD_EM:?}
+      NEXTCLOUD_USERNAME_RESEARCHER: ${NEXTCLOUD_USERNAME_RESEARCHER:-researcher}
+      NEXTCLOUD_PASSWORD_RESEARCHER: ${NEXTCLOUD_PASSWORD_RESEARCHER:?}
+    volumes:
+      - ./nextcloud-provision/init.sh:/init.sh:ro
+      - provision-output:/provision-output
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "apk add --no-cache bash curl jq >/dev/null && bash /init.sh"
+    networks: [run1prime-mg]
+
+  researcher-web-mcp:
+    build: ../../week-1-spike/spike-compose/researcher-web-mcp
+    container_name: researcher-web-mcp-run1prime-mg
+    restart: unless-stopped
+    environment:
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:?}
+      BLOCKLIST_PATH: /etc/researcher-web/blocklist.txt
+      AUDIT_PATH: /var/log/researcher-web/fetch.jsonl
+    volumes:
+      - ../../week-1-spike/spike-compose/researcher-web-mcp/blocklist.txt:/etc/researcher-web/blocklist.txt:ro
+      - ./researcher-web-audit:/var/log/researcher-web
+    networks: [run1prime-mg]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    container_name: otel-collector-run1prime-mg
+    volumes:
+      - ./otel-collector-boot-smoke.yaml:/etc/otelcol-contrib/config.yaml:ro
+    environment:
+      AZURE_MONITOR_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING:?}
+    networks: [run1prime-mg]
+
+  # ─── per-agent OpenClaw gateways ────────────────────────────────────────
+
+  openclaw-em:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
+      args:
+        OPENCLAW_VERSION: ${OPENCLAW_VERSION:-2026.5.20}
+    container_name: openclaw-em-run1prime-mg
+    restart: "no"
+    depends_on:
+      nextcloud-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?}
+      NEXTCLOUD_HOST: http://nextcloud
+      NEXTCLOUD_USERNAME_EM: ${NEXTCLOUD_USERNAME_EM:-em}
+      NEXTCLOUD_PASSWORD_EM: ${NEXTCLOUD_PASSWORD_EM:?}
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-run-1prime-mg-em}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SERVICE_NAME: openclaw-em
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=week-1.5-run-1prime-mg,roster.agent=em"
+    volumes:
+      - ./agents/openclaw.em.json:/root/.openclaw/openclaw.json:ro
+      - ./agents/em:/workspace/em:rw
+      - openclaw-em-state:/root/.openclaw/state
+    networks: [run1prime-mg]
+
+  openclaw-researcher:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
+      args:
+        OPENCLAW_VERSION: ${OPENCLAW_VERSION:-2026.5.20}
+    container_name: openclaw-researcher-run1prime-mg
+    restart: "no"
+    depends_on:
+      nextcloud-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+      researcher-web-mcp:
+        condition: service_started
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?}
+      NEXTCLOUD_HOST: http://nextcloud
+      NEXTCLOUD_USERNAME_RESEARCHER: ${NEXTCLOUD_USERNAME_RESEARCHER:-researcher}
+      NEXTCLOUD_PASSWORD_RESEARCHER: ${NEXTCLOUD_PASSWORD_RESEARCHER:?}
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:?}
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-run-1prime-mg-rx}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SERVICE_NAME: openclaw-researcher
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=week-1.5-run-1prime-mg,roster.agent=researcher"
+    volumes:
+      - ./agents/openclaw.researcher.json:/root/.openclaw/openclaw.json:ro
+      - ./agents/researcher:/workspace/researcher:rw
+      - openclaw-rx-state:/root/.openclaw/state
+    networks: [run1prime-mg]
+
+  # ─── Talk → OpenClaw bridge ─────────────────────────────────────────────
+  #
+  # Reads one identities.json that maps user → gateway container, polls each
+  # user's Talk rooms, and `docker exec`s into the right gateway on each new
+  # non-own message.
+
+  nextcloud-talk-bridge:
+    build:
+      context: ./nextcloud-talk-bridge
+    container_name: nextcloud-talk-bridge-run1prime-mg
+    restart: "no"
+    depends_on:
+      openclaw-em:
+        condition: service_started
+      openclaw-researcher:
+        condition: service_started
+    environment:
+      NEXTCLOUD_HOST: http://nextcloud
+      BRIDGE_CONFIG: /etc/bridge/identities.json
+      BRIDGE_STATE_FILE: /state/bridge-state.json
+      # Secrets passed as container env, then templated into identities.json at
+      # entrypoint time so docker-inspect doesn't leak them via baked-in args.
+      NEXTCLOUD_USERNAME_EM: ${NEXTCLOUD_USERNAME_EM:-em}
+      NEXTCLOUD_PASSWORD_EM: ${NEXTCLOUD_PASSWORD_EM:?}
+      NEXTCLOUD_USERNAME_RESEARCHER: ${NEXTCLOUD_USERNAME_RESEARCHER:-researcher}
+      NEXTCLOUD_PASSWORD_RESEARCHER: ${NEXTCLOUD_PASSWORD_RESEARCHER:?}
+    volumes:
+      - bridge-state:/state
+      # Bridge invokes `openclaw agent` inside each gateway via docker exec.
+      # Spike-scope only; real deployments would use an RPC, not the socket.
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Render identities.json from runtime env, then exec the bridge.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        mkdir -p /etc/bridge
+        python -c '
+        import json, os
+        cfg = [
+          {"user": os.environ["NEXTCLOUD_USERNAME_EM"], "password": os.environ["NEXTCLOUD_PASSWORD_EM"], "container": "openclaw-em-run1prime-mg", "agent_id": "em"},
+          {"user": os.environ["NEXTCLOUD_USERNAME_RESEARCHER"], "password": os.environ["NEXTCLOUD_PASSWORD_RESEARCHER"], "container": "openclaw-researcher-run1prime-mg", "agent_id": "researcher"},
+        ]
+        open("/etc/bridge/identities.json","w").write(json.dumps(cfg))
+        '
+        exec python -u /app/bridge.py
+    networks: [run1prime-mg]
+
+volumes:
+  nc-db-data:
+  nc-data:
+  provision-output:
+  openclaw-em-state:
+  openclaw-rx-state:
+  bridge-state:
+
+networks:
+  run1prime-mg:
+    driver: bridge

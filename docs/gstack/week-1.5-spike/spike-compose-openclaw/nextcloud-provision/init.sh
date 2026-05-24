@@ -75,9 +75,12 @@ add_participant () {
 create_user "${EM_USER}" "${EM_PWD}"
 create_user "${RX_USER}" "${RX_PWD}"
 
-# 2. Rooms — #team (group, both members) + EM-Researcher (group, both)
+# 2. Rooms — #team (group, both members + admin as operator) + EM-Researcher
+#    Admin joins #team so external kickoff/operator messages can be posted as
+#    a regular Talk participant (mirrors a human operator in real deployments).
 TEAM_TOKEN=$(create_room "${EM_USER}" "${EM_PWD}" "team" 2)
 add_participant "${EM_USER}" "${EM_PWD}" "${TEAM_TOKEN}" "${RX_USER}"
+add_participant "${EM_USER}" "${EM_PWD}" "${TEAM_TOKEN}" "${ADMIN}"
 
 EM_RX_TOKEN=$(create_room "${EM_USER}" "${EM_PWD}" "EM-Researcher" 2)
 add_participant "${EM_USER}" "${EM_PWD}" "${EM_RX_TOKEN}" "${RX_USER}"
