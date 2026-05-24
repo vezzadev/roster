@@ -151,7 +151,7 @@ Estimated F-O-8 waste: 3 duplicate first-turn invocations × ~$1-2 each = $3-5 o
 - Previous: [t5-run-1prime-conclusions.md](t5-run-1prime-conclusions.md) (Run 1' single-process, F-O-1 blocker discovered)
 - Ledger: [t5-openclaw-run-ledger.md](t5-openclaw-run-ledger.md) (Run 1'-mg row + F-O-7, F-O-8 added to findings table)
 - Architecture pivot rationale: per-identity Talk plugin vs N-gateway tradeoff captured in PR thread (Run 1' findings PR #46 comments)
-- Letta-side analogue: [`../week-1-spike/spike-compose/letta-mcp-channel`](../week-1-spike/spike-compose/letta-mcp-channel) (Roster v1 channel architecture this mirrors)
+- Letta-side analogue: [`vezzadev/letta-mcp-channel`](https://github.com/vezzadev/letta-mcp-channel) (external repo — Roster v1 channel architecture this mirrors)
 - Bridge source: [`spike-compose-openclaw/nextcloud-talk-bridge/bridge.py`](spike-compose-openclaw/nextcloud-talk-bridge/bridge.py)
 - Compose: [`spike-compose-openclaw/docker-compose.2agent-multigateway.yml`](spike-compose-openclaw/docker-compose.2agent-multigateway.yml)
 - Kickoff: [`spike-compose-openclaw/run-1prime-mg-kickoff.sh`](spike-compose-openclaw/run-1prime-mg-kickoff.sh)
