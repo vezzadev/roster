@@ -1,0 +1,157 @@
+# Run 1' — 2-agent (EM + Researcher) compose.
+#
+# Reproducible from cold: Nextcloud + Postgres + Redis live in this file.
+# No dependency on Week 1's running stack.
+#
+# Bring-up order (compose handles via depends_on):
+#   nc-db, nc-redis → nextcloud (installs Talk via postinstall hook)
+#   → nextcloud-init (creates em+researcher users + rooms)
+#   → openclaw-gateway + researcher-web-mcp + otel-collector
+#
+# Hard 15-min wall-clock cap is applied by run-1prime-kickoff.sh.
+
+services:
+
+  nc-db:
+    image: postgres:16-alpine
+    container_name: nc-db-run1prime
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NC_DB_PASSWORD:?set in .env.run1prime}
+    volumes:
+      - nc-db-data:/var/lib/postgresql/data
+    networks: [run1prime]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextcloud"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  nc-redis:
+    image: redis:7-alpine
+    container_name: nc-redis-run1prime
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    networks: [run1prime]
+
+  nextcloud:
+    image: nextcloud:30
+    container_name: nextcloud-run1prime
+    restart: unless-stopped
+    depends_on:
+      nc-db:
+        condition: service_healthy
+      nc-redis:
+        condition: service_started
+    environment:
+      POSTGRES_HOST: nc-db
+      POSTGRES_DB: nextcloud
+      POSTGRES_USER: nextcloud
+      POSTGRES_PASSWORD: ${NC_DB_PASSWORD:?set in .env.run1prime}
+      REDIS_HOST: nc-redis
+      NEXTCLOUD_ADMIN_USER: ${NC_ADMIN_USER:-admin}
+      NEXTCLOUD_ADMIN_PASSWORD: ${NC_ADMIN_PASSWORD:?set in .env.run1prime}
+      NEXTCLOUD_TRUSTED_DOMAINS: "localhost nextcloud"
+    volumes:
+      - nc-data:/var/www/html
+      # Postinstall hook — Nextcloud's stock image runs every script under
+      # /docker-entrypoint-hooks.d/post-installation/ on first boot.
+      - ./nextcloud-provision/install-talk.sh:/docker-entrypoint-hooks.d/post-installation/install-talk.sh:ro
+    networks: [run1prime]
+
+  nextcloud-init:
+    # alpine:3.20 + bash/curl/jq. curlimages/curl uses BusyBox sh which can't
+    # parse bash arrays. Installing the toolchain at startup is cheaper than
+    # baking a custom image and keeps the compose self-contained.
+    image: alpine:3.20
+    container_name: nextcloud-init-run1prime
+    restart: "no"
+    depends_on:
+      nextcloud:
+        condition: service_started
+    environment:
+      NC_ADMIN_USER: ${NC_ADMIN_USER:-admin}
+      NC_ADMIN_PASSWORD: ${NC_ADMIN_PASSWORD:?set in .env.run1prime}
+      NEXTCLOUD_HOST: http://nextcloud
+      NEXTCLOUD_USERNAME_EM: ${NEXTCLOUD_USERNAME_EM:-em}
+      NEXTCLOUD_PASSWORD_EM: ${NEXTCLOUD_PASSWORD_EM:?set in .env.run1prime}
+      NEXTCLOUD_USERNAME_RESEARCHER: ${NEXTCLOUD_USERNAME_RESEARCHER:-researcher}
+      NEXTCLOUD_PASSWORD_RESEARCHER: ${NEXTCLOUD_PASSWORD_RESEARCHER:?set in .env.run1prime}
+    volumes:
+      - ./nextcloud-provision/init.sh:/init.sh:ro
+      - provision-output:/provision-output
+    entrypoint:
+      - /bin/sh
+      - -c
+      - "apk add --no-cache bash curl jq >/dev/null && bash /init.sh"
+    networks: [run1prime]
+
+  researcher-web-mcp:
+    build: ../../week-1-spike/spike-compose/researcher-web-mcp
+    container_name: researcher-web-mcp-run1prime
+    restart: unless-stopped
+    environment:
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:?set in .env.run1prime}
+      BLOCKLIST_PATH: /etc/researcher-web/blocklist.txt
+      AUDIT_PATH: /var/log/researcher-web/fetch.jsonl
+    volumes:
+      - ../../week-1-spike/spike-compose/researcher-web-mcp/blocklist.txt:/etc/researcher-web/blocklist.txt:ro
+      - ./researcher-web-audit:/var/log/researcher-web
+    networks: [run1prime]
+
+  openclaw-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile.openclaw
+      args:
+        OPENCLAW_VERSION: ${OPENCLAW_VERSION:-2026.5.20}
+    container_name: openclaw-run-1prime
+    restart: "no"
+    depends_on:
+      nextcloud-init:
+        condition: service_completed_successfully
+      otel-collector:
+        condition: service_started
+      researcher-web-mcp:
+        condition: service_started
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:?set in .env.run1prime}
+      NEXTCLOUD_HOST: http://nextcloud
+      NEXTCLOUD_USERNAME_EM: ${NEXTCLOUD_USERNAME_EM:-em}
+      NEXTCLOUD_PASSWORD_EM: ${NEXTCLOUD_PASSWORD_EM:?set in .env.run1prime}
+      NEXTCLOUD_USERNAME_RESEARCHER: ${NEXTCLOUD_USERNAME_RESEARCHER:-researcher}
+      NEXTCLOUD_PASSWORD_RESEARCHER: ${NEXTCLOUD_PASSWORD_RESEARCHER:?set in .env.run1prime}
+      FIRECRAWL_API_KEY: ${FIRECRAWL_API_KEY:?set in .env.run1prime}
+      OPENCLAW_GATEWAY_TOKEN: ${OPENCLAW_GATEWAY_TOKEN:-run-1prime-local}
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_SERVICE_NAME: openclaw-gateway
+      OTEL_RESOURCE_ATTRIBUTES: "service.namespace=week-1.5-run-1prime"
+    volumes:
+      - ./agents/openclaw.2agent.json:/root/.openclaw/openclaw.json:ro
+      - ./agents/em:/workspace/em:rw
+      - ./agents/researcher:/workspace/researcher:rw
+      - provision-output:/provision-output:ro
+      - openclaw-state:/root/.openclaw/state
+    networks: [run1prime]
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.111.0
+    container_name: otel-collector-run1prime
+    volumes:
+      - ./otel-collector-boot-smoke.yaml:/etc/otelcol-contrib/config.yaml:ro
+    environment:
+      AZURE_MONITOR_CONNECTION_STRING: ${APPLICATIONINSIGHTS_CONNECTION_STRING:?set in .env.run1prime}
+    networks: [run1prime]
+
+volumes:
+  nc-db-data:
+  nc-data:
+  provision-output:
+  openclaw-state:
+
+networks:
+  run1prime:
+    driver: bridge

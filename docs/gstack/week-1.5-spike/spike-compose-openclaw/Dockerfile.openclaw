@@ -29,6 +29,17 @@ RUN npm install -g openclaw@${OPENCLAW_VERSION} && openclaw --version
 # Anthropic, so we rely on OpenClaw's first-party plugin instead.
 RUN openclaw plugins install clawhub:@openclaw/diagnostics-otel --pin
 
+# cbcoutinho/nextcloud-mcp-server is the EM's + Researcher's outbound MCP for
+# Talk and Notes. Stdio transport (uvx-launched at runtime), so we just need
+# the uv binary on PATH — uv handles the Python venv per invocation.
+#
+# (We deliberately do NOT install the @openclaw/nextcloud-talk channel plugin.
+# That plugin is single-bot-identity; per-agent identity in Roster requires
+# each agent to write through its own Nextcloud user, which is what cbcoutinho
+# via stdio gives us. See t5-run-1prime-conclusions.md for the architecture
+# discussion.)
+RUN curl -LsSf https://astral.sh/uv/install.sh | env UV_UNMANAGED_INSTALL=/usr/local/bin sh
+
 # ─── Workspace ─────────────────────────────────────────────────────────────
 WORKDIR /workspace
 VOLUME ["/workspace", "/root/.openclaw"]

@@ -1,0 +1,139 @@
+// 2-agent (EM + Researcher) configuration, Run 1' of the Week 1.5 spike.
+//
+// Architecture choice (see t5-run-1prime-conclusions.md):
+//
+//   * NO @openclaw/nextcloud-talk channel plugin — that plugin is single-bot
+//     identity, which doesn't fit the per-agent-user Roster model. Agents
+//     instead use the cbcoutinho/nextcloud-mcp-server MCP via stdio (uvx) and
+//     drive Talk read/write themselves. This mirrors Week 1's Letta setup
+//     exactly (Letta also had no inbound channel — polled from MCP).
+//
+//   * NO bindings[] (no inbound channels to bind).
+//
+//   * Per-agent MCP scoping via tools.byProvider so each agent only sees
+//     its own MCP set (researcher gets researcher-web + nextcloud-researcher;
+//     EM gets only nextcloud-em).
+//
+//   * stdio MCP servers omit the `transport` field (schema reserves it for
+//     `sse` / `streamable-http`; stdio is implicit from `command`+`args`).
+{
+  agents: {
+    defaults: {
+      heartbeat: { every: "5m" },
+    },
+    list: [
+      {
+        id: "em",
+        default: true,
+        workspace: "/workspace/em",
+        model: {
+          // EM is the synthesis role per t5-system-prompts.md — opus tier.
+          primary: "anthropic/claude-opus-4-7",
+        },
+        models: {
+          "anthropic/claude-opus-4-7": { params: { cacheRetention: "long" } },
+        },
+        tools: {
+          // EM sees only its own Nextcloud MCP. Schema: tools.byProvider keyed
+          // by MCP server id; `allow: ["*"]` exposes every tool the server
+          // advertises, `deny` removes specific tools.
+          byProvider: {
+            "nextcloud-em":         { allow: ["*"] },
+            "nextcloud-researcher": { allow: [] },   // explicitly hidden
+            "researcher-web":       { allow: [] },
+          },
+        },
+      },
+      {
+        id: "researcher",
+        workspace: "/workspace/researcher",
+        model: {
+          primary: "anthropic/claude-sonnet-4-6",
+        },
+        models: {
+          "anthropic/claude-sonnet-4-6": { params: { cacheRetention: "long" } },
+        },
+        tools: {
+          byProvider: {
+            "nextcloud-em":         { allow: [] },
+            "nextcloud-researcher": { allow: ["*"] },
+            "researcher-web":       { allow: ["*"] },
+          },
+        },
+      },
+    ],
+  },
+  env: {
+    vars: {
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}",
+      NEXTCLOUD_HOST: "${NEXTCLOUD_HOST}",
+      NEXTCLOUD_USERNAME_EM: "${NEXTCLOUD_USERNAME_EM}",
+      NEXTCLOUD_PASSWORD_EM: "${NEXTCLOUD_PASSWORD_EM}",
+      NEXTCLOUD_USERNAME_RESEARCHER: "${NEXTCLOUD_USERNAME_RESEARCHER}",
+      NEXTCLOUD_PASSWORD_RESEARCHER: "${NEXTCLOUD_PASSWORD_RESEARCHER}",
+      FIRECRAWL_API_KEY: "${FIRECRAWL_API_KEY}",
+    },
+  },
+  mcp: {
+    servers: {
+      // EM's outbound MCP: post to Talk + write to Notes. cbcoutinho package
+      // launched via uvx (no transport key — stdio is implicit when command is set).
+      "nextcloud-em": {
+        command: "uvx",
+        // cbcoutinho 1.x moved the server to a `run` subcommand and exposes stdio as
+// an opt-in transport. Calling the bare entrypoint just prints help and
+// exits, which OpenClaw sees as `MCP error -32000: Connection closed`.
+args: ["--from", "nextcloud-mcp-server@latest", "nextcloud-mcp-server", "run", "--transport", "stdio"],
+        env: {
+          NEXTCLOUD_HOST:     "${NEXTCLOUD_HOST}",
+          NEXTCLOUD_USERNAME: "${NEXTCLOUD_USERNAME_EM}",
+          NEXTCLOUD_PASSWORD: "${NEXTCLOUD_PASSWORD_EM}",
+        },
+      },
+      "nextcloud-researcher": {
+        command: "uvx",
+        // cbcoutinho 1.x moved the server to a `run` subcommand and exposes stdio as
+// an opt-in transport. Calling the bare entrypoint just prints help and
+// exits, which OpenClaw sees as `MCP error -32000: Connection closed`.
+args: ["--from", "nextcloud-mcp-server@latest", "nextcloud-mcp-server", "run", "--transport", "stdio"],
+        env: {
+          NEXTCLOUD_HOST:     "${NEXTCLOUD_HOST}",
+          NEXTCLOUD_USERNAME: "${NEXTCLOUD_USERNAME_RESEARCHER}",
+          NEXTCLOUD_PASSWORD: "${NEXTCLOUD_PASSWORD_RESEARCHER}",
+        },
+      },
+      // Researcher's web fetch MCP — Firecrawl-backed, network-ACL'd.
+      // Streamable-HTTP transport per the in-repo server.py.
+      "researcher-web": {
+        url: "http://researcher-web-mcp:8000/mcp",
+        transport: "streamable-http",
+      },
+    },
+  },
+  gateway: {
+    mode: "local",
+    port: 18789,
+    reload: { mode: "off" },
+  },
+  plugins: {
+    allow: ["diagnostics-otel", "anthropic"],
+    entries: {
+      "diagnostics-otel": { enabled: true },
+      "anthropic":        { enabled: true },
+    },
+  },
+  diagnostics: {
+    enabled: true,
+    otel: {
+      enabled: true,
+      endpoint: "http://otel-collector:4318",
+      protocol: "http/protobuf",
+      serviceName: "openclaw-gateway",
+      traces: true,
+      metrics: true,
+      logs: false,
+      sampleRate: 1.0,
+      flushIntervalMs: 5000,
+    },
+  },
+}

@@ -34,4 +34,9 @@ logs/
 *.local
 .env.smoke
 .env.smoke.*
+.env.run1prime
+.env.run2prime
+# Run snapshots contain raw session transcripts (prompt + completion text).
+docs/gstack/week-1.5-spike/spike-compose-openclaw/run-*-snapshot/
+docs/gstack/week-1.5-spike/spike-compose-openclaw/researcher-web-audit/
 .playwright-cli/

@@ -7,31 +7,31 @@ numbered runs, **prompt freeze per run**, hash-pinned config, hard caps,
 artifact links. Row format identical to Week 1 so the AI panel can compare
 runs across runtimes apples-to-apples.
 
-Status: ⏳ not started — gated on
-[t4-openclaw-mcp-fidelity.md](t4-openclaw-mcp-fidelity.md) pass +
-[t9-otel-parity.md](t9-otel-parity.md) pass.
+Status: 🛠 Run 1' scaffolded; T9' partial-pass per [boot-smoke-findings.md](boot-smoke-findings.md) (transcript-replay cost-scrape used as fallback); T4' deferred to mid-run observation.
 
 ## Pre-flight readiness (G-list, mirrored from Week 1's G-1…G-8)
 
 | Gate | Check | Status |
 |---|---|---|
-| G'-1 | OpenClaw pinned ≥ 2026.1.29 (CVE-2026-25253 patched) | ⏳ |
-| G'-2 | OTel parity validated per T9' acceptance test | ⏳ |
-| G'-3 | MCP fidelity check passed per T4' | ⏳ |
-| G'-4 | Frozen prompts hashed + committed (same hashes as Week 1 modulo channel-tool name swaps) | ⏳ |
-| G'-5 | Per-agent workspace seeded — AGENTS.md, SOUL.md, MEMORY.md, HEARTBEAT.md, TOOLS.md per agent | ⏳ |
-| G'-6 | Anthropic auth wired (decide API-key vs OAuth — open question #5 in [README.md](README.md)) | ⏳ |
-| G'-7 | Nextcloud Talk rooms created (one #team + per-pair DMs, same topology Week 1 used) | ⏳ |
-| G'-8 | Cost budget alert set at the Anthropic console level (not just OpenClaw config — F-O5 mitigation) | ⏳ |
+| G'-1 | OpenClaw pinned ≥ 2026.1.29 (CVE-2026-25253 patched) | ⚠️ pinned to latest (`2026.5.20`); CVE backport not separately verified — accepted spike-scope risk |
+| G'-2 | OTel parity validated per T9' acceptance test | 🚧 partial — span semconv + duration metric pass; token-usage histogram silent → fall back to [`scrape-usage.py`](spike-compose-openclaw/scrape-usage.py) reading session transcripts |
+| G'-3 | MCP fidelity check passed per T4' | ⏳ folded into Run 1' as live observation — researcher-web-mcp (streamable-http) + cbcoutinho/nextcloud-mcp-server (stdio via uvx) both exercised |
+| G'-4 | Frozen prompts hashed + committed (same hashes as Week 1 modulo channel-tool name swaps) | ✅ EM = `e966a655…`, Researcher = `2fff77b9…` — verbatim port to `agents/em/AGENTS.md` + `agents/researcher/AGENTS.md`, sha256 match Week 1 |
+| G'-5 | Per-agent workspace seeded — AGENTS.md, SOUL.md, MEMORY.md, HEARTBEAT.md, TOOLS.md per agent | ✅ AGENTS/SOUL/USER/IDENTITY/BOOTSTRAP seeded per agent (TOOLS.md/HEARTBEAT.md deferred — embedded in AGENTS to preserve hash) |
+| G'-6 | Anthropic auth wired (decide API-key vs OAuth — open question #5 in [README.md](README.md)) | ✅ API-key path chosen (smoke-validated boot-smoke run) — OAuth deferred to a later spike |
+| G'-7 | Nextcloud Talk rooms created (one #team + per-pair DMs, same topology Week 1 used) | ✅ reusing Week 1 rooms (`#team qcfcaosp`, `EM-Researcher fdj2y9qi`) — Nextcloud + accounts still up in `spike-compose_spike` network |
+| G'-8 | Cost budget alert set at the Anthropic console level (not just OpenClaw config — F-O5 mitigation) | ⚠️ accepted-risk for 15-min Run 1' — budget exposure < $5 worst case (hard wall-clock cap) |
 
-No run kicks off until all G'-gates are ✅.
+Run 1' kicks off with G'-2/3 deferred; Run 2' requires G'-2 fully closed.
 
 ## Run matrix
 
 | Run | Goal | Agents | Models | Hard cap | Status |
 |---|---|---|---|---|---|
-| 1' — 2-agent smoke | Validate end-to-end happy path under OpenClaw before scaling up | EM + Researcher | Opus 4.7 + Sonnet 4.6 | 45 min | ⏳ |
-| 2' — 4-agent main | SC#5 artifact run; produces the brief that goes to the AI panel | EM + Senior A + Senior B + Researcher | Opus 4.7 + Sonnet 4.6 × 3 | 2h | ⏳ |
+| 1' — 2-agent smoke | Validate end-to-end happy path under OpenClaw before scaling up | EM + Researcher | Opus 4.7 + Sonnet 4.6 | **15 min** | ⚠️ partial — brief produced ($19.54), coordination loop NOT validated (F-O-1 Talk→OpenClaw delivery gap). See [conclusions](t5-run-1prime-conclusions.md). |
+| 2' — 4-agent main | SC#5 artifact run; produces the brief that goes to the AI panel | EM + Senior A + Senior B + Researcher | Opus 4.7 + Sonnet 4.6 × 3 | 2h | ⛔ blocked on F-O-1 — either ship a per-identity Talk channel plugin for OpenClaw OR bake a Talk-polling instruction into HEARTBEAT.md before this run. |
+
+Run 1' kickoff command: `./spike-compose-openclaw/run-1prime-kickoff.sh`. Hard-cap enforced via `HARD_CAP_SECONDS=900` then graceful `compose down`. Snapshot lands under `spike-compose-openclaw/run-1prime-snapshot/<ISO-timestamp>/`.
 
 Re-run policy: if Run 2' halts on a *fixable* runtime/infra bug (per the
 run-failure recovery policy stored in operator memory — autonomously fix +
@@ -68,7 +68,16 @@ finding row in this ledger, halt, and surface.
 Numbered in discovery order, mirroring Week 1's F-1…F-8 numbering for the
 Letta side. F-O prefix to keep them visually distinct.
 
-(none yet)
+| # | Title | Severity | Discovered | Status |
+|---|---|---|---|---|
+| F-O-1 | Talk → OpenClaw delivery gap — no inbound channel without a per-identity Talk plugin | **blocker** for autonomous coordination | Run 1' | open — structural; needs channel plugin OR HEARTBEAT.md poll instruction |
+| F-O-2 | Filesystem writes escape the workspace mount; OpenClaw fs-tool unsandboxed | high | Run 1' | open — prompt fix + runtime config fix |
+| F-O-3 | Auto-compaction lock-release race → `EmbeddedAttemptSessionTakeoverError`, compaction work discarded | upstream | Run 1' | open — affects any multi-lane agent; verify on next OpenClaw release |
+| F-O-4 | Per-agent MCP scoping (`tools.byProvider.allow: []`) may be ineffective | medium | boot-smoke + Run 1' | open — re-test on Run 2' with toolDefinitions introspection |
+| F-O-5 | Cost rollup path bug in `run-1prime-kickoff.sh` (`openclaw-agents/..` vs `agents/`) | low | Run 1' | fixed in script for Run 2' (pending commit) |
+| F-O-6 | Kickoff message lacks engagement spec; EM has to derive scope from AGENTS.md → cross-run inconsistency | medium | Run 1' | fix in Run 2' kickoff |
+
+Details: [t5-run-1prime-conclusions.md](t5-run-1prime-conclusions.md), [t5-run-1prime-open-questions.md](t5-run-1prime-open-questions.md).
 
 ## Forced SPOF (T6')
 
