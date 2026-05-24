@@ -6,7 +6,11 @@ The artifact this spike exists to produce. Lands as a Markdown brief at the
 end of Run 2' covering Indonesia 3PL market entry — same workload, same
 rubric, same blind AI-panel review protocol as Week 1's T8.
 
-Status: ⏳ awaits Run 2' completion in [t5-openclaw-run-ledger.md](t5-openclaw-run-ledger.md).
+Status: **superseded by [spike-conclusions.md](spike-conclusions.md)** (2026-05-23).
+Run 2' deferred until Week 2 cost optimization; the gate decision was made
+on cumulative evidence from Run 1 + Run 1'-mg + [t1-checks-report.md](t1-checks-report.md)
+without requiring a separate 4-agent artifact above the same bar. This file
+remains as the Run-2' protocol reference for when the deferred run executes.
 
 ## Acceptance protocol (unchanged from Week 1)
 
