@@ -28,8 +28,9 @@ Run 1' kicks off with G'-2/3 deferred; Run 2' requires G'-2 fully closed.
 
 | Run | Goal | Agents | Models | Hard cap | Status |
 |---|---|---|---|---|---|
-| 1' — 2-agent smoke | Validate end-to-end happy path under OpenClaw before scaling up | EM + Researcher | Opus 4.7 + Sonnet 4.6 | **15 min** | ⚠️ partial — brief produced ($19.54), coordination loop NOT validated (F-O-1 Talk→OpenClaw delivery gap). See [conclusions](t5-run-1prime-conclusions.md). |
-| 2' — 4-agent main | SC#5 artifact run; produces the brief that goes to the AI panel | EM + Senior A + Senior B + Researcher | Opus 4.7 + Sonnet 4.6 × 3 | 2h | ⛔ blocked on F-O-1 — either ship a per-identity Talk channel plugin for OpenClaw OR bake a Talk-polling instruction into HEARTBEAT.md before this run. |
+| 1' — 2-agent smoke (single process) | Validate end-to-end happy path under OpenClaw before scaling up | EM + Researcher | Opus 4.7 + Sonnet 4.6 | **15 min** | ⚠️ partial — brief produced ($19.54), coordination loop NOT validated (F-O-1 Talk→OpenClaw delivery gap). See [conclusions](t5-run-1prime-conclusions.md). |
+| 1'-mg — 2-agent re-run, N-gateway architecture | Validate the bridge-based fix for F-O-1 before scaling to 4 agents | EM + Researcher | Opus 4.7 + Sonnet 4.6 | **15 min** | ✅ success — 163-line brief with 20 cited sources at **$16.37** (17 % cheaper than Run 1'); F-O-1 verified fixed; F-O-7 + F-O-8 opened. See [conclusions](t5-run-1prime-mg-conclusions.md). |
+| 2' — 4-agent main | SC#5 artifact run; produces the brief that goes to the AI panel | EM + Senior A + Senior B + Researcher | Opus 4.7 + Sonnet 4.6 × 3 | 2h | 🚧 unblocked once F-O-8 + F-O-2 fixes land; compose grows from 2 to 4 gateways |
 
 Run 1' kickoff command: `./spike-compose-openclaw/run-1prime-kickoff.sh`. Hard-cap enforced via `HARD_CAP_SECONDS=900` then graceful `compose down`. Snapshot lands under `spike-compose-openclaw/run-1prime-snapshot/<ISO-timestamp>/`.
 
@@ -70,14 +71,16 @@ Letta side. F-O prefix to keep them visually distinct.
 
 | # | Title | Severity | Discovered | Status |
 |---|---|---|---|---|
-| F-O-1 | Talk → OpenClaw delivery gap — no inbound channel without a per-identity Talk plugin | **blocker** for autonomous coordination | Run 1' | open — structural; needs channel plugin OR HEARTBEAT.md poll instruction |
-| F-O-2 | Filesystem writes escape the workspace mount; OpenClaw fs-tool unsandboxed | high | Run 1' | open — prompt fix + runtime config fix |
-| F-O-3 | Auto-compaction lock-release race → `EmbeddedAttemptSessionTakeoverError`, compaction work discarded | upstream | Run 1' | open — affects any multi-lane agent; verify on next OpenClaw release |
-| F-O-4 | Per-agent MCP scoping (`tools.byProvider.allow: []`) may be ineffective | medium | boot-smoke + Run 1' | open — re-test on Run 2' with toolDefinitions introspection |
-| F-O-5 | Cost rollup path bug in `run-1prime-kickoff.sh` (`openclaw-agents/..` vs `agents/`) | low | Run 1' | fixed in script for Run 2' (pending commit) |
-| F-O-6 | Kickoff message lacks engagement spec; EM has to derive scope from AGENTS.md → cross-run inconsistency | medium | Run 1' | fix in Run 2' kickoff |
+| F-O-1 | Talk → OpenClaw delivery gap — no inbound channel without a per-identity Talk plugin | **blocker** for autonomous coordination | Run 1' | **resolved** in Run 1'-mg — `nextcloud-talk-bridge` sidecar closes the loop (per-identity OCS long-poll + `docker exec` into the right gateway) |
+| F-O-2 | Filesystem writes escape the workspace mount; OpenClaw fs-tool unsandboxed | high | Run 1' | open — multi-gateway unchanged the surface; needs prompt fix + runtime config fix |
+| F-O-3 | Auto-compaction lock-release race → `EmbeddedAttemptSessionTakeoverError`, compaction work discarded | upstream | Run 1' | open — not observed in Run 1'-mg (shorter turns, no overflow); re-test under Run 2's 2 h cap |
+| F-O-4 | Per-agent MCP scoping (`tools.byProvider.allow: []`) may be ineffective | medium | boot-smoke + Run 1' | **resolved structurally** under N-gateway — each gateway loads only its own MCP servers; no `allow:[]` needed |
+| F-O-5 | Cost rollup path bug in `run-1prime-kickoff.sh` (`openclaw-agents/..` vs `agents/`) | low | Run 1' | fixed; verified in Run 1'-mg |
+| F-O-6 | Kickoff message lacks engagement spec; EM has to derive scope from AGENTS.md → cross-run inconsistency | medium | Run 1' | fixed; verified in Run 1'-mg (brief baked into kickoff script) |
+| F-O-7 | Nextcloud auto-provisions a `Talk updates ✅` room with ~20 release-notes messages per new user; naive bridge with `lastKnownMessageId=0` replays them | low | Run 1'-mg | fixed in `bridge.py` (anchor at `lastMessage.id` on first sight of a room) |
+| F-O-8 | Bridge 180 s synchronous timeout is a false alarm during MCP-cold-start turns; `docker exec` kill doesn't signal the in-container process → orphan + duplicate-delivery on retry → ~25 % token waste | medium | Run 1'-mg | open — Run 2' must land detached-exec fix or per-session bridge locking |
 
-Details: [t5-run-1prime-conclusions.md](t5-run-1prime-conclusions.md), [t5-run-1prime-open-questions.md](t5-run-1prime-open-questions.md).
+Details: [t5-run-1prime-conclusions.md](t5-run-1prime-conclusions.md) (Run 1' single-process), [t5-run-1prime-mg-conclusions.md](t5-run-1prime-mg-conclusions.md) (Run 1'-mg multi-gateway), [t5-run-1prime-open-questions.md](t5-run-1prime-open-questions.md).
 
 ## Forced SPOF (T6')
 
