@@ -60,7 +60,7 @@ Mirrors Week 1's per-run conclusions structure.
 
 **Implication:** Roster needs either (a) a per-identity Talk channel plugin for OpenClaw (the work `letta-mcp-channel` did for Letta), or (b) a Talk-polling instruction baked into HEARTBEAT.md so Researcher checks its rooms every heartbeat cycle. (b) is a workable bridge for the spike at the cost of polling latency = heartbeat period.
 
-**Status:** Aligns with the [v1 Letta-Nextcloud channel](../../../../home/pedro/.claude/projects/-home-pedro-src-roster/memory/v1_letta_channel.md) memory — confirmed Roster v1 cannot ship without a real channel plugin regardless of runtime. Structural finding for the spike.
+**Status:** Aligns with the prior Roster-v1 finding that Letta also needed a custom channel plugin (`vezzadev/letta-mcp-channel`) for Nextcloud → Letta delivery — confirmed Roster v1 cannot ship without a real channel plugin regardless of runtime. Structural finding for the spike.
 
 ### F-O-2 — Filesystem writes escape the workspace (sandbox gap)
 
