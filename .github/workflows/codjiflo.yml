@@ -24,7 +24,7 @@ jobs:
 
       - name: Capture PR iteration
         id: capture
-        uses: pedropaulovc/codjiflo/action@c5690255c572537fb6a6a213795307b6e0f07e90 # main as of 2026-05-19
+        uses: vezzadev/codjiflo-action@v1 # main as of 2026-05-19
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pr-number: ${{ github.event.pull_request.number }}
